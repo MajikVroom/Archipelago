@@ -1437,6 +1437,29 @@ class Spoiler:
                     path_listings.append("{}\n        {}".format(location, "\n   =>   ".join(path_lines)))
 
                 outfile.write('\n'.join(path_listings))
+            
+            outfile.write('\n\nHello World\n\nRegion Counts:\n\n')
+            
+            regions = [(str(region), str(region.player), len(region.locations),len([location for location in region.locations if location.item.advancement]))
+                         for region in self.multiworld.get_regions()]
+            outfile.write('\n'.join(
+                ['%s: Player %s - %s Locations with %s Important items' % (region, player, str(count), str(importantItems)) for region, player, count, importantItems in regions if count > 0]))
+            
+            outfile.write('\n\nWOTH:\n')
+            
+            wothCandidates = []
+            for (sphere_nr, sphere) in self.playthrough.items():
+                if isinstance(sphere, dict):
+                    for (location, item) in sphere.items():
+                        wothCandidates.append(f"{item} is at {location}")
+            
+            woth = []
+            for i in range(6):
+                woth.append(wothCandidates.pop(random.randrange(0,len(wothCandidates)-1,1)))
+            
+            outfile.write('\n'.join(
+                ['\n%s' % (w) for w in woth]))
+            
             AutoWorld.call_all(self.multiworld, "write_spoiler_end", outfile)
 
 
