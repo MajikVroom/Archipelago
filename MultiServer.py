@@ -468,8 +468,15 @@ class Context:
             server_options = decoded_obj.get("server_options", {})
             self._set_options(server_options)
 
+        fakeLocation = 1234
+        fakeItem = 5678
+
         # embedded data package
         for game_name, data in decoded_obj.get("datapackage", {}).items():
+            # Hacky bullshit
+            if game_name == "Hollow Knight":
+                data["item_name_to_id"]["Fake item name"] = fakeItem
+                data["location_name_to_id"]["Fake location name"] = fakeLocation
             if game_name in game_data_packages:
                 data = game_data_packages[game_name]
             self.logger.info(f"Loading embedded data package for game {game_name}")
@@ -484,6 +491,9 @@ class Context:
             self.read_data[f"item_name_groups_{game_name}"] = lambda lgame=game_name: self.item_name_groups[lgame]
         for game_name, data in self.location_name_groups.items():
             self.read_data[f"location_name_groups_{game_name}"] = lambda lgame=game_name: self.location_name_groups[lgame]
+
+        self.hints[0, 1].update([NetUtils.Hint(1, 1, fakeLocation, fakeItem, True, "", 0)])
+
 
         # sorted access spheres
         self.spheres = decoded_obj.get("spheres", [])

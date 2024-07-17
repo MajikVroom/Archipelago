@@ -553,14 +553,17 @@ class CommonContext:
             local_version: int = network_data_package["games"].get(game, {}).get("version", 0)
             local_checksum: typing.Optional[str] = network_data_package["games"].get(game, {}).get("checksum")
             # no action required if local version is new enough
+            forceUpdate = True
             if (not remote_checksum and (remote_version > local_version or remote_version == 0)) \
-                    or remote_checksum != local_checksum:
+                    or remote_checksum != local_checksum \
+                    or forceUpdate:
                 cached_game = Utils.load_data_package_for_checksum(game, remote_checksum)
                 cache_version: int = cached_game.get("version", 0)
                 cache_checksum: typing.Optional[str] = cached_game.get("checksum")
                 # download remote version if cache is not new enough
                 if (not remote_checksum and (remote_version > cache_version or remote_version == 0)) \
-                        or remote_checksum != cache_checksum:
+                        or remote_checksum != cache_checksum \
+                        or forceUpdate:
                     needed_updates.add(game)
                 else:
                     self.update_game(cached_game, game)
