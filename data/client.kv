@@ -116,6 +116,60 @@
         height: self.minimum_height
         orientation: 'vertical'
         spacing: dp(3)
+<LocationLabel>:
+    canvas.before:
+        Color:
+            rgba: (.0, 0.9, .1, .3) if self.selected else (0.2, 0.2, 0.2, 1) if self.striped else (0.18, 0.18, 0.18, 1)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    height: self.minimum_height
+    region_text: "Region"
+    total_text: "Total"
+    found_text: "Found"
+    unfound_text: "Unfound"
+    TooltipLabel:
+        id: region
+        sort_key: 'region'
+        text: root.region_text
+        halign: 'center'
+        valign: 'center'
+        pos_hint: {"center_y": 0.5}
+    TooltipLabel:
+        id: total
+        sort_key: 'total'
+        text: root.total_text
+        halign: 'center'
+        valign: 'center'
+        pos_hint: {"center_y": 0.5}
+    TooltipLabel:
+        id: found
+        sort_key: 'found'
+        text: root.found_text
+        halign: 'center'
+        valign: 'center'
+        pos_hint: {"center_y": 0.5}
+    TooltipLabel:
+        id: unfound
+        sort_key: 'unfound'
+        text: root.unfound_text
+        halign: 'center'
+        valign: 'center'
+        pos_hint: {"center_y": 0.5}
+<LocationLog>:
+    cols: 1
+    viewclass: 'LocationLabel'
+    scroll_y: self.height
+    scroll_type: ["content", "bars"]
+    bar_width: dp(12)
+    effect_cls: "ScrollEffect"
+    SelectableRecycleBoxLayout:
+        default_size: None, dp(20)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        spacing: dp(3)
 <ServerLabel>:
     text: "Server:"
     size_hint_x: None
