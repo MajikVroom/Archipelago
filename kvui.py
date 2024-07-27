@@ -374,13 +374,13 @@ class HintLabel(RecycleDataViewBehavior, BoxLayout):
         if self.index:
             self.selected = is_selected
 
-class LocationLabel(RecycleDataViewBehavior, BoxLayout):
+class RegionLabel(RecycleDataViewBehavior, BoxLayout):
     selected = BooleanProperty(False)
     striped = BooleanProperty(False)
     index = None
 
     def __init__(self):
-        super(LocationLabel, self).__init__()
+        super(RegionLabel, self).__init__()
         self.region_text = ""
         self.total_text = ""
         self.found_text = ""
@@ -399,11 +399,11 @@ class LocationLabel(RecycleDataViewBehavior, BoxLayout):
         self.found_text = data["found"]["text"]
         self.unfound_text = data["unfound"]["text"]
         self.height = self.minimum_height
-        return super(LocationLabel, self).refresh_view_attrs(rv, index, data)
+        return super(RegionLabel, self).refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
         """ Add selection on touch down """
-        if super(LocationLabel, self).on_touch_down(touch):
+        if super(RegionLabel, self).on_touch_down(touch):
             return True
         if self.index:  # skip header
             # [Brian] In hints, this section lets you click to select a hint and put it in your copy/paste buffer.
@@ -411,7 +411,7 @@ class LocationLabel(RecycleDataViewBehavior, BoxLayout):
         else:
             parent = self.parent
             parent.clear_selection()
-            parent: LocationLabel = parent.parent
+            parent: RegionLabel = parent.parent
             # find correct column
             for child in self.children:
                 if child.collide_point(*touch.pos):
@@ -594,9 +594,9 @@ class GameManager(App):
                 # show Archipelago tab if other logging is present
                 self.tabs.add_widget(panel)
 
-        location_panel = TabbedPanelItem(text="Locations")
-        self.log_panels["Locations"] = location_panel.content = LocationLog(self.json_to_kivy_parser)
-        self.tabs.add_widget(location_panel)
+        region_panel = TabbedPanelItem(text="Regions")
+        self.log_panels["Regions"] = region_panel.content = RegionLog(self.json_to_kivy_parser)
+        self.tabs.add_widget(region_panel)
 
         hint_panel = TabbedPanelItem(text="Hints")
         self.log_panels["Hints"] = hint_panel.content = HintLog(self.json_to_kivy_parser)
@@ -719,12 +719,12 @@ class GameManager(App):
     def update_hints(self):
         hints = self.ctx.stored_data[f"_read_hints_{self.ctx.team}_{self.ctx.slot}"]
         self.log_panels["Hints"].refresh_hints(hints)
-        fakeLocationData = [
+        fakeRegionData = [
             {"region" : "Lake Hylia",    "total" : 4,  "found" : 3},
             {"region" : "Lost Woods",    "total" : 3,  "found" : 3},
             {"region" : "Forest Temple", "total" : 56, "found" : 0},
         ]
-        self.log_panels["Locations"].refresh_locations(fakeLocationData)
+        self.log_panels["Regions"].refresh_regions(fakeRegionData)
 
     # default F1 keybind, opens a settings menu, that seems to break the layout engine once closed
     def open_settings(self, *largs):
@@ -839,7 +839,7 @@ class HintLog(RecycleView):
             element.height = max_height
 
 
-class LocationLog(RecycleView):
+class RegionLog(RecycleView):
     header = {
         "region": {"text": "[u]Region[/u]"},
         "total": {"text": "[u]Total[/u]"},
@@ -851,19 +851,19 @@ class LocationLog(RecycleView):
     reversed: bool = False
 
     def __init__(self, parser):
-        super(LocationLog, self).__init__()
+        super(RegionLog, self).__init__()
         self.data = [self.header]
         self.parser = parser
     
-    def refresh_locations(self, locations):
+    def refresh_regions(self, regions):
         data = []
-        for location in locations:
+        for region in regions:
             data.append({
-                "region": {"text": self.parser.handle_node({"type": "text", "text": location["region"]})},
-                "total": {"text": self.parser.handle_node({"type": "text", "text": str(location["total"])})},
-                "found": {"text": self.parser.handle_node({"type": "text", "text": str(location["found"])})},
-                "unfound": {"text": self.parser.handle_node({"type": "color", "text": str(location["total"] - location["found"]),
-                                                             "color": "green" if location["total"] - location["found"] == 0 else "red" if location["found"] == 0 else "blue"})},
+                "region": {"text": self.parser.handle_node({"type": "text", "text": region["region"]})},
+                "total": {"text": self.parser.handle_node({"type": "text", "text": str(region["total"])})},
+                "found": {"text": self.parser.handle_node({"type": "text", "text": str(region["found"])})},
+                "unfound": {"text": self.parser.handle_node({"type": "color", "text": str(region["total"] - region["found"]),
+                                                             "color": "green" if region["total"] - region["found"] == 0 else "red" if region["found"] == 0 else "blue"})},
             })
 
         data.sort(key=self.hint_sorter, reverse=self.reversed)
