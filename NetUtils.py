@@ -346,6 +346,26 @@ class Hint(typing.NamedTuple):
     def local(self):
         return self.receiving_player == self.finding_player
 
+class RegionHint(typing.NamedTuple):
+    region: str  # TODO Brian: region IDs? Would need IDs to be defined in the data package
+    player: int
+    total_items: int
+    found_items: int
+    found: bool
+
+    def re_check(self, ctx, team) -> Hint:
+        if self.found:
+            return self
+        found = self.location in ctx.location_checks[team, self.finding_player]
+        if found:
+            return Hint(self.receiving_player, self.finding_player, self.location, self.item, found, self.entrance,
+                        self.item_flags)
+        return self
+
+    def __hash__(self):
+        # TODO Brian: called?
+        return hash((self.region, self.player, self.total_items, self.found_items))
+
 
 class _LocationStore(dict, typing.MutableMapping[int, typing.Dict[int, typing.Tuple[int, int, int]]]):
     def __init__(self, values: typing.MutableMapping[int, typing.Dict[int, typing.Tuple[int, int, int]]]):
