@@ -438,6 +438,8 @@ class Context:
             self.player_name_lookup[slot_info.name] = 0, slot_id
             self.read_data[f"hints_{0}_{slot_id}"] = lambda local_team=0, local_player=slot_id: \
                 list(self.get_rechecked_hints(local_team, local_player))
+            self.read_data[f"region_hints_{0}_{slot_id}"] = lambda local_team=0, local_player=slot_id: \
+                list(self.get_filtered_region_hints(local_team, local_player))
             self.read_data[f"client_status_{0}_{slot_id}"] = lambda local_team=0, local_player=slot_id: \
                 self.client_game_state[local_team, local_player]
 
@@ -646,6 +648,13 @@ class Context:
         self.recheck_hints(team, slot)
         return self.hints[team, slot]
 
+    def get_filtered_region_hints(self, team: int, slot: int):
+        # TODO Brian: Filter out non-obtained hints from the full set.
+        # Location hints are statically generated, so only return the ones that have been unlocked.
+        return [NetUtils.RegionHint("Lake Hylia", 1, 8, 3, True),
+                NetUtils.RegionHint("Lake Hylia", 1, 7, 7, True),
+                NetUtils.RegionHint("Lake Hylia", 1, 6, 0, True),]
+
     def get_sphere(self, player: int, location_id: int) -> int:
         """Get sphere of a location, -1 if spheres are not available."""
         if self.spheres:
@@ -747,6 +756,7 @@ class Context:
         }])
 
     def on_changed_hints(self, team: int, slot: int):
+        # TODO Brian: Need equivalent path for publishing hints as we get them
         key: str = f"_read_hints_{team}_{slot}"
         targets: typing.Set[Client] = set(self.stored_data_notification_clients[key])
         if targets:
@@ -1014,6 +1024,7 @@ def register_location_checks(ctx: Context, team: int, slot: int, locations: typi
             item_id, target_player, flags = ctx.locations[slot][location]
             new_item = NetworkItem(item_id, location, slot, flags)
             send_items_to(ctx, team, target_player, new_item)
+            # TODO Brian: check if hint attached to location, and release hint if so.
 
             ctx.logger.info('(Team #%d) %s sent %s to %s (%s)' % (
                 team + 1, ctx.player_names[(team, slot)], ctx.item_names[ctx.slot_info[target_player].game][item_id],

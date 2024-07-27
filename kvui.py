@@ -719,12 +719,8 @@ class GameManager(App):
     def update_hints(self):
         hints = self.ctx.stored_data[f"_read_hints_{self.ctx.team}_{self.ctx.slot}"]
         self.log_panels["Hints"].refresh_hints(hints)
-        fakeRegionData = [
-            {"region" : "Lake Hylia",    "total" : 4,  "found" : 3},
-            {"region" : "Lost Woods",    "total" : 3,  "found" : 3},
-            {"region" : "Forest Temple", "total" : 56, "found" : 0},
-        ]
-        self.log_panels["Regions"].refresh_regions(fakeRegionData)
+        regionHints = self.ctx.stored_data[f"_read_region_hints_{self.ctx.team}_{self.ctx.slot}"]
+        self.log_panels["Regions"].refresh_regions(regionHints)
 
     # default F1 keybind, opens a settings menu, that seems to break the layout engine once closed
     def open_settings(self, *largs):
@@ -860,10 +856,10 @@ class RegionLog(RecycleView):
         for region in regions:
             data.append({
                 "region": {"text": self.parser.handle_node({"type": "text", "text": region["region"]})},
-                "total": {"text": self.parser.handle_node({"type": "text", "text": str(region["total"])})},
-                "found": {"text": self.parser.handle_node({"type": "text", "text": str(region["found"])})},
-                "unfound": {"text": self.parser.handle_node({"type": "color", "text": str(region["total"] - region["found"]),
-                                                             "color": "green" if region["total"] - region["found"] == 0 else "red" if region["found"] == 0 else "blue"})},
+                "total": {"text": self.parser.handle_node({"type": "text", "text": str(region["total_items"])})},
+                "found": {"text": self.parser.handle_node({"type": "text", "text": str(region["found_items"])})},
+                "unfound": {"text": self.parser.handle_node({"type": "color", "text": str(region["total_items"] - region["found_items"]),
+                                                             "color": "green" if region["total_items"] - region["found_items"] == 0 else "red" if region["found_items"] == 0 else "blue"})},
             })
 
         data.sort(key=self.hint_sorter, reverse=self.reversed)
