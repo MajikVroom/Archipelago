@@ -374,13 +374,67 @@ class HintLabel(RecycleDataViewBehavior, BoxLayout):
         if self.index:
             self.selected = is_selected
 
-class RegionLabel(RecycleDataViewBehavior, BoxLayout):
+class TextHintLabel(RecycleDataViewBehavior, BoxLayout):
     selected = BooleanProperty(False)
     striped = BooleanProperty(False)
     index = None
 
     def __init__(self):
-        super(RegionLabel, self).__init__()
+        super(TextHintLabel, self).__init__()
+        self.hint_text = ""
+        for child in self.children:
+            child.bind(texture_size=self.set_height)
+
+    def set_height(self, instance, value):
+        self.height = max([child.texture_size[1] for child in self.children])
+
+    def refresh_view_attrs(self, rv, index, data):
+        self.index = index
+        self.striped = data.get("striped", False)
+        self.hint_text = data["hint"]["text"]
+        self.height = self.minimum_height
+        return super(TextHintLabel, self).refresh_view_attrs(rv, index, data)
+
+    def on_touch_down(self, touch):
+        """ Add selection on touch down """
+        if super(TextHintLabel, self).on_touch_down(touch):
+            return True
+        if self.index:  # skip header
+            # [Majik] In hints, this section lets you click to select a hint and put it in your copy/paste buffer.
+            pass
+        else:
+            parent = self.parent
+            parent.clear_selection()
+            parent: TextHintLabel = parent.parent
+            # find correct column
+            for child in self.children:
+                if child.collide_point(*touch.pos):
+                    key = child.sort_key
+                    parent.hint_sorter = lambda element: remove_between_brackets.sub("", element[key]["text"]).lower()
+                    if key == parent.sort_key:
+                        # second click reverses order
+                        parent.reversed = not parent.reversed
+                    else:
+                        parent.sort_key = key
+                        parent.reversed = False
+                    break
+            else:
+                logging.warning("Did not find clicked header for sorting.")
+
+            App.get_running_app().update_hints()
+
+    def apply_selection(self, rv, index, is_selected):
+        """ Respond to the selection of items in the view. """
+        if self.index:
+            self.selected = is_selected
+
+class RegionHintLabel(RecycleDataViewBehavior, BoxLayout):
+    selected = BooleanProperty(False)
+    striped = BooleanProperty(False)
+    index = None
+
+    def __init__(self):
+        super(RegionHintLabel, self).__init__()
         self.region_text = ""
         self.total_text = ""
         self.found_text = ""
@@ -399,19 +453,19 @@ class RegionLabel(RecycleDataViewBehavior, BoxLayout):
         self.found_text = data["found"]["text"]
         self.unfound_text = data["unfound"]["text"]
         self.height = self.minimum_height
-        return super(RegionLabel, self).refresh_view_attrs(rv, index, data)
+        return super(RegionHintLabel, self).refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
         """ Add selection on touch down """
-        if super(RegionLabel, self).on_touch_down(touch):
+        if super(RegionHintLabel, self).on_touch_down(touch):
             return True
         if self.index:  # skip header
-            # [Brian] In hints, this section lets you click to select a hint and put it in your copy/paste buffer.
+            # [Majik] In hints, this section lets you click to select a hint and put it in your copy/paste buffer.
             pass
         else:
             parent = self.parent
             parent.clear_selection()
-            parent: RegionLabel = parent.parent
+            parent: RegionHintLabel = parent.parent
             # find correct column
             for child in self.children:
                 if child.collide_point(*touch.pos):
@@ -595,8 +649,12 @@ class GameManager(App):
                 self.tabs.add_widget(panel)
 
         region_panel = TabbedPanelItem(text="Regions")
-        self.log_panels["Regions"] = region_panel.content = RegionLog(self.json_to_kivy_parser)
+        self.log_panels["Regions"] = region_panel.content = RegionHintLog(self.json_to_kivy_parser)
         self.tabs.add_widget(region_panel)
+
+        text_hint_panel = TabbedPanelItem(text="Text Hints")
+        self.log_panels["TextHints"] = text_hint_panel.content = TextHintLog(self.json_to_kivy_parser)
+        self.tabs.add_widget(text_hint_panel)
 
         hint_panel = TabbedPanelItem(text="Hints")
         self.log_panels["Hints"] = hint_panel.content = HintLog(self.json_to_kivy_parser)
@@ -720,7 +778,9 @@ class GameManager(App):
         hints = self.ctx.stored_data[f"_read_hints_{self.ctx.team}_{self.ctx.slot}"]
         self.log_panels["Hints"].refresh_hints(hints)
         regionHints = self.ctx.stored_data[f"_read_region_hints_{self.ctx.team}_{self.ctx.slot}"]
-        self.log_panels["Regions"].refresh_regions(regionHints)
+        self.log_panels["Regions"].refresh_hints(regionHints)
+        textHints = self.ctx.stored_data[f"_read_text_hints_{self.ctx.team}_{self.ctx.slot}"]
+        self.log_panels["TextHints"].refresh_hints(textHints)
 
     # default F1 keybind, opens a settings menu, that seems to break the layout engine once closed
     def open_settings(self, *largs):
@@ -834,8 +894,34 @@ class HintLog(RecycleView):
             max_height = max(child.texture_size[1] for child in element.children)
             element.height = max_height
 
+class TextHintLog(RecycleView):
+    header = {
+        "hint": {"text": "[u]Hint[/u]"},
+    }
+    
+    reversed: bool = False
 
-class RegionLog(RecycleView):
+    def __init__(self, parser):
+        super(TextHintLog, self).__init__()
+        self.data = [self.header]
+        self.parser = parser
+    
+    def refresh_hints(self, text_hints):
+        # TODO Majik: If we introduce UI for marking hints handled, that might be worth sorting on. But for now, not sortable.
+        data = [self.header]
+        for text_hint in text_hints:
+            data.append({
+                "hint": {"text": self.parser.handle_node({"type": "text", "text": text_hint["text"]})},
+            })
+        self.data = data
+
+    def fix_heights(self):
+        """Workaround fix for divergent texture and layout heights"""
+        for element in self.children[0].children:
+            max_height = max(child.texture_size[1] for child in element.children)
+            element.height = max_height
+
+class RegionHintLog(RecycleView):
     header = {
         "region": {"text": "[u]Region[/u]"},
         "total": {"text": "[u]Total[/u]"},
@@ -847,11 +933,11 @@ class RegionLog(RecycleView):
     reversed: bool = False
 
     def __init__(self, parser):
-        super(RegionLog, self).__init__()
+        super(RegionHintLog, self).__init__()
         self.data = [self.header]
         self.parser = parser
     
-    def refresh_regions(self, regions):
+    def refresh_hints(self, regions):
         data = []
         for region in regions:
             data.append({

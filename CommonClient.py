@@ -868,6 +868,7 @@ async def process_server_cmd(ctx: CommonContext, args: dict):
         ctx.consume_players_package(args["players"])
         ctx.stored_data_notification_keys.add(f"_read_hints_{ctx.team}_{ctx.slot}")
         ctx.stored_data_notification_keys.add(f"_read_region_hints_{ctx.team}_{ctx.slot}")
+        ctx.stored_data_notification_keys.add(f"_read_text_hints_{ctx.team}_{ctx.slot}")
         msgs = []
         if ctx.locations_checked:
             msgs.append({"cmd": "LocationChecks",
@@ -949,7 +950,10 @@ async def process_server_cmd(ctx: CommonContext, args: dict):
         if ctx.ui and f"_read_hints_{ctx.team}_{ctx.slot}" in args["keys"]:
             ctx.ui.update_hints()
         elif ctx.ui and f"_read_region_hints_{ctx.team}_{ctx.slot}" == args["key"]:
-            # TODO Brian: separate hint updates?
+            # TODO Majik: separate hint updates?
+            ctx.ui.update_hints()
+        elif ctx.ui and f"_read_text_hints_{ctx.team}_{ctx.slot}" == args["key"]:
+            # TODO Majik: separate hint updates?
             ctx.ui.update_hints()
 
     elif cmd == "SetReply":
@@ -957,7 +961,10 @@ async def process_server_cmd(ctx: CommonContext, args: dict):
         if ctx.ui and f"_read_hints_{ctx.team}_{ctx.slot}" == args["key"]:
             ctx.ui.update_hints()
         elif ctx.ui and f"_read_region_hints_{ctx.team}_{ctx.slot}" == args["key"]:
-            # TODO Brian: separate hint updates?
+            # TODO Majik: separate hint updates?
+            ctx.ui.update_hints()
+        elif ctx.ui and f"_read_text_hints_{ctx.team}_{ctx.slot}" == args["key"]:
+            # TODO Majik: separate hint updates?
             ctx.ui.update_hints()
         elif args["key"].startswith("EnergyLink"):
             ctx.current_energy_link_value = args["value"]
