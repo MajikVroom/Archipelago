@@ -451,6 +451,14 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                     if current_sphere:
                         spheres.append(dict(current_sphere))
 
+                # TODO: SuperApt replace these with real hints. 16777382 is the location ID for HK's first check.
+                fake_triggerable_hints = {}
+                fake_triggerable_hints[1] = [NetUtils.TriggerableHint(NetUtils.RegionHint(1, "Lake Hylia", 8, 3), NetUtils.FreeTrigger()),
+                                             NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint is free"), NetUtils.FreeTrigger()),
+                                             NetUtils.TriggerableHint(NetUtils.RegionHint(1, "Forest Temple", 7, 7), NetUtils.LocationTrigger(1, 16777382)),
+                                             NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint was unlocked"), NetUtils.LocationTrigger(1, 16777382)),]
+
+
                 multidata = {
                     "slot_data": slot_data,
                     "slot_info": slot_info,
@@ -461,6 +469,7 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                     "er_hint_data": er_hint_data,
                     "precollected_items": precollected_items,
                     "precollected_hints": precollected_hints,
+                    "triggerable_hints": fake_triggerable_hints,
                     "version": tuple(version_tuple),
                     "tags": ["AP"],
                     "minimum_versions": minimum_versions,

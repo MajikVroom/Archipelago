@@ -116,7 +116,37 @@
         height: self.minimum_height
         orientation: 'vertical'
         spacing: dp(3)
-<RegionLabel>:
+<TextHintLabel>:
+    canvas.before:
+        Color:
+            rgba: (.0, 0.9, .1, .3) if self.selected else (0.2, 0.2, 0.2, 1) if self.striped else (0.18, 0.18, 0.18, 1)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    height: self.minimum_height
+    hint_text: "Hint"
+    TooltipLabel:
+        id: hint
+        sort_key: 'hint'
+        text: root.hint_text
+        halign: 'center'
+        valign: 'center'
+        pos_hint: {"center_y": 0.5}
+<TextHintLog>:
+    cols: 1
+    viewclass: 'TextHintLabel'
+    scroll_y: self.height
+    scroll_type: ["content", "bars"]
+    bar_width: dp(12)
+    effect_cls: "ScrollEffect"
+    SelectableRecycleBoxLayout:
+        default_size: None, dp(20)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        spacing: dp(3)
+<RegionHintLabel>:
     canvas.before:
         Color:
             rgba: (.0, 0.9, .1, .3) if self.selected else (0.2, 0.2, 0.2, 1) if self.striped else (0.18, 0.18, 0.18, 1)
@@ -156,9 +186,9 @@
         halign: 'center'
         valign: 'center'
         pos_hint: {"center_y": 0.5}
-<RegionLog>:
+<RegionHintLog>:
     cols: 1
-    viewclass: 'RegionLabel'
+    viewclass: 'RegionHintLabel'
     scroll_y: self.height
     scroll_type: ["content", "bars"]
     bar_width: dp(12)

@@ -346,26 +346,40 @@ class Hint(typing.NamedTuple):
     def local(self):
         return self.receiving_player == self.finding_player
 
-class RegionHint(typing.NamedTuple):
-    region: str  # TODO Brian: region IDs? Would need IDs to be defined in the data package
+# Unlock conditions for an inner hint
+class TriggerableHint(typing.NamedTuple):
+    hint: TextHint | RegionHint
+    trigger: LocationTrigger | FreeTrigger
+
+class TextHint(typing.NamedTuple):
     player: int
+    text: str  # TODO Majik: region IDs? Would need IDs to be defined in the data package
+
+    def __hash__(self):
+        # TODO Majik: called?
+        return hash((self.text, self.player))
+
+class RegionHint(typing.NamedTuple):
+    player: int
+    region: str  # TODO Majik: region IDs? Would need IDs to be defined in the data package
     total_items: int
     found_items: int
-    found: bool
-
-    def re_check(self, ctx, team) -> Hint:
-        if self.found:
-            return self
-        found = self.location in ctx.location_checks[team, self.finding_player]
-        if found:
-            return Hint(self.receiving_player, self.finding_player, self.location, self.item, found, self.entrance,
-                        self.item_flags)
+    
+    def re_check(self, ctx, team) -> RegionHint:
+        # TODO Majik: use ctx to calculate the number of found items within the region. If different than found_items, return a new Regionhint with appropriate found_items.
+        # Do we actually need to support recalculating from scratch? Or can we maintain the right number? Might be mostly about minimizing save size or data duplication?
         return self
 
     def __hash__(self):
-        # TODO Brian: called?
+        # TODO Majik: called?
         return hash((self.region, self.player, self.total_items, self.found_items))
 
+class LocationTrigger(typing.NamedTuple):
+    player: int
+    location: int
+
+class FreeTrigger(typing.NamedTuple):
+    pass
 
 class _LocationStore(dict, typing.MutableMapping[int, typing.Dict[int, typing.Tuple[int, int, int]]]):
     def __init__(self, values: typing.MutableMapping[int, typing.Dict[int, typing.Tuple[int, int, int]]]):
