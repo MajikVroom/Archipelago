@@ -1444,7 +1444,7 @@ class Spoiler:
             outfile.write('\n\nHello World\n')
             
             outfile.write('\n'.join(
-                ['\nType: %s __ Trigger: %s __ Location: %s __ Hint: "%s"' % (custom_hint['custom_hint_type'], custom_hint['custom_hint_unlock_trigger'], custom_hint['custom_hint_location'].name, custom_hint['custom_hint_text']) for custom_hint in custom_hints_data]))
+                ['\nType: %s __ Trigger: %s __ Location: %s __ Hint: "%s"' % (custom_hint['type'], custom_hint['unlock_trigger'], custom_hint['location'].name, custom_hint['text']) for custom_hint in custom_hints_data]))
             #####################################################################################################
             # AptMarsh - END                                                                                    #
             #####################################################################################################
