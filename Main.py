@@ -404,7 +404,13 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                         if len(custom_hints_possible_locations) > 0:
                             # Choose a random valid location to associate with the hint and add the hint to the list, then remove that location from the valid locations as it has been reserved for a hint already
                             custom_hints_chosen_location = multiworld.per_slot_randoms[1].choice(custom_hints_possible_locations)
-                            custom_hints.append({'custom_hint_type': 'area', 'custom_hint_unlock_trigger': 'item_collect', 'custom_hint_location': custom_hints_chosen_location, 'custom_hint_text': f"(Player {player}) {area} has {key_item_count} key items out of {location_count} locations", 'custom_hint_misc': {}})
+                            custom_hints.append({'type': 'area', 'unlock_trigger': 'item_collect',
+                                                 'location': custom_hints_chosen_location, 
+                                                 'player': 1,#{player},
+                                                 'text': f"(Player {player}) {area} has {key_item_count} key items out of {location_count} locations",
+                                                 'area': area, 
+                                                 'location_count': location_count,
+                                                 'key_item_count': key_item_count})
                             custom_hints_possible_locations.remove(custom_hints_chosen_location)
                     # Assemble all hintable items
                     custom_hints_all_hintable_items += map(multiworld.get_name_string_for_object, game_world.custom_hints_hintable_items)
@@ -418,6 +424,7 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                         for (location, item) in sphere.items():   
                             if item in custom_hints_all_hintable_items:
                                 wothCandidates.append(f"{item} is at {location}")
+                                #wothCandidates.append({ 'text': f"{item} is at {location}", 'player':item.player})
                 # Populate a chosen list of woth hints to be distributed into the custom hint list
                 for i in range(custom_hints_woth_count):
                     # Only keep adding woth hints if there are still candidates left
@@ -425,7 +432,10 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                         # Choose a random valid location to associate with the hint and add the hint to the list, then remove that location from the valid locations as it has been reserved for a hint already
                         custom_hints_chosen_location = multiworld.per_slot_randoms[1].choice(custom_hints_possible_locations)
                         custom_hints_chosen_woth = multiworld.per_slot_randoms[1].choice(wothCandidates)
-                        custom_hints.append({'custom_hint_type': 'woth', 'custom_hint_unlock_trigger': 'item_collect', 'custom_hint_location': custom_hints_chosen_location, 'custom_hint_text': custom_hints_chosen_woth, 'custom_hint_misc': {}})
+                        custom_hints.append({'type': 'woth', 'unlock_trigger': 'item_collect',
+                                             'location': custom_hints_chosen_location, 
+                                             'player': 1,
+                                             'text': custom_hints_chosen_woth})
                         custom_hints_possible_locations.remove(custom_hints_chosen_location)
                         wothCandidates.remove(custom_hints_chosen_woth)
                 #####################################################################################################
@@ -452,6 +462,28 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                         spheres.append(dict(current_sphere))
 
                 # TODO: SuperApt replace these with real hints. 16777382 is the location ID for HK's first check.
+                custom_hints_multidata = {}
+                for hint in custom_hints:
+                    if hint['location'].player not in custom_hints_multidata:
+                        custom_hints_multidata[hint['location'].player] = []
+                    if hint['type'] == 'area':
+                        custom_hints_multidata[hint['location'].player].append(
+                            NetUtils.TriggerableHint(NetUtils.RegionHint(hint['player'],
+                                                                         hint['area'],
+                                                                         hint['key_item_count'], 0),
+                                                                         NetUtils.LocationTrigger(hint['location'].player,
+                                                                                                  hint['location'].address)))
+                    elif hint['type'] == 'woth':
+                        custom_hints_multidata[hint['location'].player].append(
+                            NetUtils.TriggerableHint(NetUtils.TextHint(hint['player'],
+                                                                         hint['text']), 
+                                                                         NetUtils.LocationTrigger(hint['location'].player,
+                                                                                                  hint['location'].address)))
+                        
+                #custom_hints_multidata = {}
+                #custom_hints_multidata[1] =  [NetUtils.TriggerableHint(NetUtils.RegionHint(1, "Forest Temple", 7, 7), NetUtils.LocationTrigger(1, 351000)),
+                #                             NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint was unlocked"), NetUtils.LocationTrigger(1, 351001)),]
+                
                 fake_triggerable_hints = {}
                 fake_triggerable_hints[1] = [NetUtils.TriggerableHint(NetUtils.RegionHint(1, "Lake Hylia", 8, 3), NetUtils.FreeTrigger()),
                                              NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint is free"), NetUtils.FreeTrigger()),
@@ -469,7 +501,7 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                     "er_hint_data": er_hint_data,
                     "precollected_items": precollected_items,
                     "precollected_hints": precollected_hints,
-                    "triggerable_hints": fake_triggerable_hints,
+                    "triggerable_hints": custom_hints_multidata,
                     "version": tuple(version_tuple),
                     "tags": ["AP"],
                     "minimum_versions": minimum_versions,

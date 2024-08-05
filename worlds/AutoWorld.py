@@ -471,10 +471,10 @@ class World(metaclass=AutoWorldRegister):
             custom_hints_areas_in = [(custom_hints_areas_mapping[location.parent_region.name], location.player, 1, 1 if (location.advancement and location.item.name not in custom_hints_excluded_items) else 0)
                 for location in self.multiworld.get_locations(player=self.player) if location.item.code]
         
-        debuglog = [(custom_hints_areas_mapping[location.parent_region.name], location.player, location.name, 1 if (location.advancement and location.item.name not in custom_hints_excluded_items) else 0)
-                for location in self.multiworld.get_locations(player=self.player) if location.item.code and custom_hints_areas_mapping[location.parent_region.name] == 'Ansem Riku']
-        logging.warning(debuglog)
-        wait = input("Press Enter to continue...")
+        #debuglog = [(custom_hints_areas_mapping[location.parent_region.name], location.player, location.name, 1 if (location.advancement and location.item.name not in custom_hints_excluded_items) else 0)
+        #        for location in self.multiworld.get_locations(player=self.player) if location.item.code and custom_hints_areas_mapping[location.parent_region.name] == 'Ansem Riku']
+        #logging.warning(debuglog)
+        #wait = input("Press Enter to continue...")
         
         # Condense regions together that may be considered to be in the same area as far as the custom hint system is concerened. [|_DEFAULT_|] is used to run a one time area summary if no condensers are provided
         if len(custom_hints_condensers) < 1:
