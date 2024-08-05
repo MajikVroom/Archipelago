@@ -538,3 +538,21 @@ class KH2World(World):
         Returns random filler item name.
         """
         return self.random.choice(filler_items)
+    
+    #####################################################################################################
+    # AptMarsh - Custom hint processing                                                                 #
+    #####################################################################################################
+    def custom_hints_data_populate(self) -> None:
+        # Common controls for the hint generation system
+        custom_hints_areas_mapping = None
+        custom_hints_areas_in = None
+        custom_hints_excluded_areas = []
+        custom_hints_condensers = []
+        custom_hints_excluded_items = []
+        custom_hints_unhintable_items = []
+        
+        # Populate common custom hint data using the parent function
+        super().custom_hints_data_populate(custom_hints_areas_mapping, custom_hints_areas_in, custom_hints_excluded_areas, custom_hints_condensers, custom_hints_excluded_items, custom_hints_unhintable_items)
+    #####################################################################################################
+    # AptMarsh - END                                                                                    #
+    #####################################################################################################

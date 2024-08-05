@@ -282,3 +282,25 @@ class DOOM1993World(World):
         slot_data["two_ways_keydoors"] = True
 
         return slot_data
+
+    #####################################################################################################
+    # AptMarsh - Custom hint processing                                                                 #
+    #####################################################################################################
+    def custom_hints_data_populate(self) -> None:
+        # Common controls for the hint generation system
+        custom_hints_areas_mapping = None
+        custom_hints_areas_in = None
+        custom_hints_excluded_areas = []
+        custom_hints_condensers = [' (']
+        custom_hints_excluded_items = []
+        custom_hints_unhintable_items = []
+        
+        # Exclude map clears from item counts and hints
+        custom_hints_excluded_items += [location.item.name
+            for location in self.multiworld.get_locations() if (location.item.player == self.player and len(location.item.name.split(' - Complete')) > 1)]
+        
+        # Populate common custom hint data using the parent function
+        super().custom_hints_data_populate(custom_hints_areas_mapping, custom_hints_areas_in, custom_hints_excluded_areas, custom_hints_condensers, custom_hints_excluded_items, custom_hints_unhintable_items)
+    #####################################################################################################
+    # AptMarsh - END                                                                                    #
+    #####################################################################################################

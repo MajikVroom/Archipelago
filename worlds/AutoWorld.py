@@ -320,6 +320,17 @@ class World(metaclass=AutoWorldRegister):
     __file__: ClassVar[str]
     """path it was loaded from"""
 
+    #####################################################################################################
+    # AptMarsh - Custom hint processing and add to data package                                         #
+    #####################################################################################################
+    # Virtual defintions for custom_hint system
+    #custom_hint_areas: ClassVar[Dict[str,List[Location]]]
+    custom_hints_areas: ClassVar[List]
+    custom_hints_hintable_items: ClassVar[List[Item]]
+    #####################################################################################################
+    # AptMarsh - END                                                                                    #
+    #####################################################################################################
+
     def __init__(self, multiworld: "MultiWorld", player: int):
         assert multiworld is not None
         self.multiworld = multiworld
@@ -445,6 +456,64 @@ class World(metaclass=AutoWorldRegister):
     def write_spoiler_end(self, spoiler_handle: TextIO) -> None:
         """Write to the end of the spoiler"""
         pass
+
+    #####################################################################################################
+    # AptMarsh - Custom hint processing and add to data package                                         #
+    #####################################################################################################
+    # Virtual functions for custom_hint system
+    def custom_hints_data_populate(self, custom_hints_areas_mapping = None, custom_hints_areas_in = None, custom_hints_excluded_areas = [], custom_hints_condensers = [], custom_hints_excluded_items = [], custom_hints_unhintable_items = []) -> None:
+        if not custom_hints_areas_mapping:
+            custom_hints_areas_mapping = {}
+            for region in [location.parent_region.name for location in self.multiworld.get_locations(player=self.player) if location.item.code]:
+                custom_hints_areas_mapping[region] = region
+                
+        if not custom_hints_areas_in:
+            custom_hints_areas_in = [(custom_hints_areas_mapping[location.parent_region.name], location.player, 1, 1 if (location.advancement and location.item.name not in custom_hints_excluded_items) else 0)
+                for location in self.multiworld.get_locations(player=self.player) if location.item.code]
+        
+        debuglog = [(custom_hints_areas_mapping[location.parent_region.name], location.player, location.name, 1 if (location.advancement and location.item.name not in custom_hints_excluded_items) else 0)
+                for location in self.multiworld.get_locations(player=self.player) if location.item.code and custom_hints_areas_mapping[location.parent_region.name] == 'Ansem Riku']
+        logging.warning(debuglog)
+        wait = input("Press Enter to continue...")
+        
+        # Condense regions together that may be considered to be in the same area as far as the custom hint system is concerened. [|_DEFAULT_|] is used to run a one time area summary if no condensers are provided
+        if len(custom_hints_condensers) < 1:
+            custom_hints_condensers.append('[|_DEFAULT_|]')
+        
+        for custom_hints_condenser in custom_hints_condensers:
+            custom_hints_areas_condensed = []
+            for (area, player, location_count, key_item_count) in custom_hints_areas_in:
+                if area not in custom_hints_excluded_areas:
+                    #If running for the default tag, summarize the current area names, otherwise truncate the name at the first instance of the condenser
+                    if custom_hints_condenser == '[|_DEFAULT_|]':
+                        custom_hints_area_prefix = area
+                    else:
+                        custom_hints_area_prefix = area.split(custom_hints_condenser)[0]
+                        
+                    custom_hints_area_found = False
+                    
+                    for (idx, record) in enumerate(custom_hints_areas_condensed):
+                        if (custom_hints_area_prefix == record[0] and player == record[1]):
+                            custom_hints_area_found = True
+                            custom_hints_areas_condensed[idx] = (custom_hints_areas_condensed[idx][0], custom_hints_areas_condensed[idx][1], custom_hints_areas_condensed[idx][2] + location_count, custom_hints_areas_condensed[idx][3] + key_item_count)
+                    if not custom_hints_area_found:
+                        custom_hints_areas_condensed.append((custom_hints_area_prefix, player, location_count,key_item_count))
+            custom_hints_areas_in = custom_hints_areas_condensed
+                    
+        self.custom_hints_areas = custom_hints_areas_condensed
+        
+        self.custom_hints_hintable_items = [location.item
+                        for location in self.multiworld.get_locations() if (location.advancement and location.item.player == self.player and location.item.code and location.item.name not in custom_hints_excluded_items and location.item.name not in custom_hints_unhintable_items)]
+        
+        #self.custom_hints_areas = [(region.name, region.player, len([location for location in region.locations if location.item.code]),len([location for location in region.locations if location.advancement and location.item.code and location.item.name not in custom_hints_excluded_items]))
+        #                for region in self.multiworld.get_regions(player=self.player) if len(region.locations) > 0 and region.name not in custom_hints_excluded_areas]
+        #self.custom_hints_hintable_items = [location.item
+        #                for location in self.multiworld.get_locations() if (location.advancement and location.item.player == self.player and location.item.code and location.item.name not in custom_hints_excluded_items)]
+        """Allow individual world types to arrange a separate set of definied regions for the custom hint system and exclude items from the hintable set"""
+        pass
+    #####################################################################################################
+    # AptMarsh - END                                                                                    #
+    #####################################################################################################
 
     # end of ordered Main.py calls
 
