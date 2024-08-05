@@ -1361,7 +1361,7 @@ class Spoiler:
                         self.paths[str(multiworld.get_region('Inverted Big Bomb Shop', player))] = \
                             get_path(state, multiworld.get_region('Inverted Big Bomb Shop', player))
 
-    def to_file(self, filename: str) -> None:
+    def to_file(self, filename: str, custom_hints_data: List = []) -> None:
         from itertools import chain
         from worlds import AutoWorld
         from Options import Visibility
@@ -1438,27 +1438,17 @@ class Spoiler:
 
                 outfile.write('\n'.join(path_listings))
             
-            outfile.write('\n\nHello World\n\nRegion Counts:\n\n')
-            
-            regions = [(str(region), str(region.player), len(region.locations),len([location for location in region.locations if location.item.advancement]))
-                         for region in self.multiworld.get_regions()]
-            outfile.write('\n'.join(
-                ['%s: Player %s - %s Locations with %s Important items' % (region, player, str(count), str(importantItems)) for region, player, count, importantItems in regions if count > 0]))
-            
-            outfile.write('\n\nWOTH:\n')
-            
-            wothCandidates = []
-            for (sphere_nr, sphere) in self.playthrough.items():
-                if isinstance(sphere, dict):
-                    for (location, item) in sphere.items():
-                        wothCandidates.append(f"{item} is at {location}")
-            
-            woth = []
-            for i in range(6):
-                woth.append(wothCandidates.pop(random.randrange(0,len(wothCandidates)-1,1)))
+            #####################################################################################################
+            # AptMarsh - Custom hint processing and add to data package                                         #
+            #####################################################################################################
+            outfile.write('\n\nHello World\n')
             
             outfile.write('\n'.join(
-                ['\n%s' % (w) for w in woth]))
+                ['\nType: %s __ Trigger: %s __ Location: %s __ Hint: "%s"' % (custom_hint['custom_hint_type'], custom_hint['custom_hint_unlock_trigger'], custom_hint['custom_hint_location'].name, custom_hint['custom_hint_text']) for custom_hint in custom_hints_data]))
+            #####################################################################################################
+            # AptMarsh - END                                                                                    #
+            #####################################################################################################
+            
             
             AutoWorld.call_all(self.multiworld, "write_spoiler_end", outfile)
 

@@ -608,6 +608,27 @@ class HKWorld(World):
             self.cached_filler_items[self.player] = fillers
         return self.multiworld.random.choice(self.cached_filler_items[self.player])
 
+    #####################################################################################################
+    # AptMarsh - Custom hint processing                                                                 #
+    #####################################################################################################
+    def custom_hints_data_populate(self) -> None:
+        # Common controls for the hint generation system
+        custom_hints_areas_mapping = None
+        custom_hints_areas_in = None
+        custom_hints_excluded_areas = []
+        custom_hints_condensers = ['_']
+        custom_hints_excluded_items = ['Mask_Shard']
+        custom_hints_unhintable_items = []
+    
+        # HK needs to reassign regions by the extracted region data rather than the sole operating region of menu
+        custom_hints_areas_in = [(location_to_region_lookup[location.name], self.player, 1, 1 if (location.advancement and location.item.code and location.item.name not in custom_hints_excluded_items) else 0)
+                        for location in self.multiworld.get_locations(player=self.player) if location.item.code]
+                        
+        # Populate common custom hint data using the parent function
+        super().custom_hints_data_populate(custom_hints_areas_mapping, custom_hints_areas_in, custom_hints_excluded_areas, custom_hints_condensers, custom_hints_excluded_items, custom_hints_unhintable_items)
+    #####################################################################################################
+    # AptMarsh - END                                                                                    #
+    #####################################################################################################
 
 def create_region(world: MultiWorld, player: int, name: str, location_names=None) -> Region:
     ret = Region(name, player, world)
@@ -617,7 +638,7 @@ def create_region(world: MultiWorld, player: int, name: str, location_names=None
             location = HKLocation(player, location, loc_id, ret)
             ret.locations.append(location)
     return ret
-
+    
 
 class HKLocation(Location):
     game: str = "Hollow Knight"
