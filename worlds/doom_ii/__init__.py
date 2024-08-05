@@ -266,3 +266,25 @@ class DOOM2World(World):
 
     def fill_slot_data(self) -> Dict[str, Any]:
         return self.options.as_dict("difficulty", "random_monsters", "random_pickups", "random_music", "flip_levels", "allow_death_logic", "pro", "death_link", "reset_level_on_death", "episode1", "episode2", "episode3", "episode4")
+
+    #####################################################################################################
+    # AptMarsh - Custom hint processing                                                                 #
+    #####################################################################################################
+    def custom_hints_data_populate(self) -> None:
+        # Common controls for the hint generation system
+        custom_hints_areas_mapping = None
+        custom_hints_areas_in = None
+        custom_hints_excluded_areas = []
+        custom_hints_condensers = [' (']
+        custom_hints_excluded_items = []
+        custom_hints_unhintable_items = []
+        
+        # Exclude map clears from item counts and hints
+        custom_hints_excluded_items += [location.item.name
+            for location in self.multiworld.get_locations() if (location.item.player == self.player and len(location.item.name.split(' - Complete')) > 1)]
+        
+        # Populate common custom hint data using the parent function
+        super().custom_hints_data_populate(custom_hints_areas_mapping, custom_hints_areas_in, custom_hints_excluded_areas, custom_hints_condensers, custom_hints_excluded_items, custom_hints_unhintable_items)
+    #####################################################################################################
+    # AptMarsh - END                                                                                    #
+    #####################################################################################################

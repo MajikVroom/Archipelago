@@ -1396,6 +1396,103 @@ class OOTWorld(World):
     def get_filler_item_name(self) -> str:
         return get_junk_item(count=1, pool=get_junk_pool(self))[0]
 
+    #####################################################################################################
+    # AptMarsh - Custom hint processing                                                                 #
+    #####################################################################################################
+    def custom_hints_data_populate(self) -> None:
+        # Common controls for the hint generation system
+        custom_hints_areas_mapping = {}
+        custom_hints_areas_in = None
+        custom_hints_excluded_areas = ['Root']
+        custom_hints_condensers = []
+        custom_hints_excluded_items = ['Zeldas Letter','Gerudo Membership Card','Gold Skulltula Token']
+        custom_hints_unhintable_items = ['Light Arrows']
+  
+        # Manually build areas mapping based on the larger standard areas we have used as a standard
+        for region in [location.parent_region.name for location in self.multiworld.get_locations(player=self.player) if location.item.code]:
+            if region.startswith('KF '):
+                custom_hints_areas_mapping[region] = 'Kokiri Forest'
+            elif region.startswith('LW ') or region.startswith('Deku Theater'):
+                custom_hints_areas_mapping[region] = 'Lost Woods'
+            elif region.startswith('SFM '):
+                custom_hints_areas_mapping[region] = 'Sacred Forest Meadow'
+            elif region.startswith('Deku Tree ') or region.startswith('Queen Gohma '):
+                custom_hints_areas_mapping[region] = 'Deku Tree'
+            elif region.startswith('Forest Temple ') or region.startswith('Phantom Ganon '):
+                custom_hints_areas_mapping[region] = 'Forest Temple'
+                 
+            elif region.startswith('Death Mountain') or region.startswith('DMT '):
+                custom_hints_areas_mapping[region] = 'DMT'
+            elif region.startswith('GC '):
+                custom_hints_areas_mapping[region] = 'Goron City'
+            elif region.startswith('DMC '):
+                custom_hints_areas_mapping[region] = 'DMC'
+            elif region.startswith('Dodongos Cavern ') or region.startswith('King Dodongo '):
+                custom_hints_areas_mapping[region] = 'Dodongos Cavern'
+            elif region.startswith('Fire Temple ') or region.startswith('Volvagia '):
+                custom_hints_areas_mapping[region] = 'Fire Temple'
+                 
+            elif region.startswith('LH '):
+                custom_hints_areas_mapping[region] = 'Lake Hylia'
+            elif region.startswith('ZR '):
+                custom_hints_areas_mapping[region] = 'Zora River'
+            elif region.startswith('ZD '):
+                custom_hints_areas_mapping[region] = 'Zoras Domain'
+            elif region.startswith('ZF '):
+                custom_hints_areas_mapping[region] = 'Zoras Fountain'
+            elif region.startswith('Jabu Jabus Belly ') or region.startswith('Barinade '):
+                custom_hints_areas_mapping[region] = 'Jabu'
+            elif region.startswith('Ice Cavern '):
+                custom_hints_areas_mapping[region] = 'Ice Cavern'
+            elif region.startswith('Water Temple ') or region.startswith('Morpha '):
+                custom_hints_areas_mapping[region] = 'Water Temple'
+                
+            elif region.startswith('Kakariko ') or region.startswith('Kak '):
+                custom_hints_areas_mapping[region] = 'Kakariko'
+            elif region.startswith('Graveyard '):
+                custom_hints_areas_mapping[region] = 'Graveyard'
+            elif region.startswith('Bottom of the Well '):
+                custom_hints_areas_mapping[region] = 'BOTW'
+            elif region.startswith('Shadow Temple ') or region.startswith('Bongo Bongo '):
+                custom_hints_areas_mapping[region] = 'Shadow Temple'
+                
+            elif region.startswith('GV '):
+                custom_hints_areas_mapping[region] = 'Gerudo Valley'
+            elif region.startswith('GF ') or region.startswith('Hideout '):
+                custom_hints_areas_mapping[region] = 'Gerudo Fortress'
+            elif region.startswith('Wasteland ') or region.startswith('Haunted Wasteland'):
+                custom_hints_areas_mapping[region] = 'Wasteland'
+            elif region.startswith('Colossus ') or region.startswith('Desert Colossus '):
+                custom_hints_areas_mapping[region] = 'Desert Colossus'
+            elif region.startswith('Gerudo Training Ground '):
+                custom_hints_areas_mapping[region] = 'GTG'
+            elif region.startswith('Spirit Temple ') or region.startswith('Child Spirit ') or region.startswith('Early Adult Spirit ')  or region.startswith('Adult Spirit ') or region.startswith('Twinrova '):
+                custom_hints_areas_mapping[region] = 'Spirit Temple'
+                
+            elif region.startswith('HF '):
+                custom_hints_areas_mapping[region] = 'Hyrule Field'
+            elif region.startswith('LLR '):
+                custom_hints_areas_mapping[region] = 'Lon Lon Ranch'
+            elif region.startswith('Market '):
+                custom_hints_areas_mapping[region] = 'Market'
+            elif region.startswith('Beyond Door of Time'):
+                custom_hints_areas_mapping[region] = 'Temple of Time'
+            elif region.startswith('Hyrule Castle ') or region.startswith('HC '):
+                custom_hints_areas_mapping[region] = 'Hyrule Castle'
+            elif region.startswith('Ganons Castle Grounds') or region.startswith('OGC '):
+                custom_hints_areas_mapping[region] = 'Outside Ganons Castle'
+            elif region.startswith('Ganons Castle '):
+                custom_hints_areas_mapping[region] = 'Ganons Castle'
+                 
+            else:
+                custom_hints_areas_mapping[region] = region
+                
+        
+        # Populate common custom hint data using the parent function
+        super().custom_hints_data_populate(custom_hints_areas_mapping, custom_hints_areas_in, custom_hints_excluded_areas, custom_hints_condensers, custom_hints_excluded_items, custom_hints_unhintable_items)
+    #####################################################################################################
+    # AptMarsh - END                                                                                    #
+    #####################################################################################################
 
 def valid_dungeon_item_location(world: OOTWorld, option: str, dungeon: str, loc: OOTLocation) -> bool:
     if option == 'dungeon':
