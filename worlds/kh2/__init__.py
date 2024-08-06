@@ -561,8 +561,8 @@ class KH2World(World):
                 custom_hints_areas_mapping[region] = 'Agrabah'
             elif region == 'Genie Jafar':
                 custom_hints_areas_mapping[region] = 'Agrabah 2'
-            elif region == 'Disney Castle' or region == 'Timeless River' or region == 'Old Pete' or region == 'Future Pete' or region == 'Terra':
-                custom_hints_areas_mapping[region] = 'Disney Castle/Timeless River'
+            elif region == 'Old Pete' or region == 'Future Pete' or region == 'Terra':
+                custom_hints_areas_mapping[region] = 'Timeless River'
             elif region == "Pooh's House" or region == "Piglet's House" or region == "Rabbit's House" or region == "Roo's House" or region == 'Spooky Cave' or region == 'Starry Hill':
                 custom_hints_areas_mapping[region] = '100 Acre Wood'
             elif region == 'Barbosa':
