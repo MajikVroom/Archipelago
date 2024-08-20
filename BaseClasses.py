@@ -198,7 +198,7 @@ class MultiWorld():
                 self.location_data = {}
                 for location in [location for location in relevant_locations if location.address]:
                     if self.hint_type == 'item_value' and location.item.player and location.item.code:
-                        self.location_data[location.address] = (item_score_map[location.item.player][location.item.code], location.item)
+                        self.location_data[location.address] = (item_score_map[location.item.player][location.item.code], location.item.player)
                     elif self.hint_type == 'hint_count':
                         self.location_data[location.address] = (1, None)
                 self.update_score()
