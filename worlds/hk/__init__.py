@@ -612,33 +612,32 @@ class HKWorld(World):
     # AptMarsh - Custom hint processing                                                                 #
     #####################################################################################################
     def custom_hints_data_populate(self) -> None:
-        # Common controls for the hint generation system
-        custom_hints_areas_mapping = {}
-        custom_hints_areas_in = None
-        custom_hints_excluded_areas = []
-        custom_hints_condensers = ['_']
-        custom_hints_excluded_items = ['Mask_Shard']
-        custom_hints_unhintable_items = []
-    
-        
-        # Manually build areas mapping based on the larger standard areas we have used as a standard
-        for region in [location_to_region_lookup[location.name] for location in self.multiworld.get_locations(player=self.player) if location.item.code]:
-            if region.startswith('Ruins1') or region.startswith('Ruins2'):
-                custom_hints_areas_mapping[region] = 'Ruins'
-            elif region.startswith('Fungus1') or region.startswith('Fungus2') or region.startswith('Fungus3'):
-                custom_hints_areas_mapping[region] = 'Fungus'
-            elif region.startswith('Room'):
-                custom_hints_areas_mapping[region] = 'Shops'
-                 
-            else:
-                custom_hints_areas_mapping[region] = region
+        controls = { 'excluded_areas' : [],
+            'excluded_items' : ['Mask_Shard'],
+            'unhintable_items': [],
+            'goal_items': ['Herrah', 'Monomon', 'Lurien'],
+            'goal_locations' : []}
+        region_area_map_condensers = ['_']
 
-        # HK needs to reassign regions by the extracted region data rather than the sole operating region of menu
-        custom_hints_areas_in = [(custom_hints_areas_mapping[location_to_region_lookup[location.name]], self.player, 1, 1 if (location.advancement and location.item.code and location.item.name not in custom_hints_excluded_items) else 0)
-                        for location in self.multiworld.get_locations(player=self.player) if location.item.code]
-        
-        # Populate common custom hint data using the parent function
-        super().custom_hints_data_populate(custom_hints_areas_mapping, custom_hints_areas_in, custom_hints_excluded_areas, custom_hints_condensers, custom_hints_excluded_items, custom_hints_unhintable_items)
+        for region in set([location_to_region_lookup[location.name] for location in self.multiworld.get_locations(player=self.player) if location.item.code]):
+            if region.startswith('Ruins1') or region.startswith('Ruins2'):
+                area = 'Ruins'
+            elif region.startswith('Fungus1') or region.startswith('Fungus2') or region.startswith('Fungus3'):
+                area = 'Fungus'
+            elif region.startswith('Room'):
+                area = 'Shops'
+            else:
+                area = region
+
+            for condenser in region_area_map_condensers:
+                area = area.split(condenser)[0]
+            
+            self.multiworld.custom_hints.add_region(self.player, region, area)
+
+        for location in [location for location in self.multiworld.get_locations(player=self.player) if location.item.code]:
+            self.multiworld.custom_hints.add_location(location,location_to_region_lookup[location.name])
+
+        super().custom_hints_data_populate(populate_region_area_map = False, populate_location_region_map = False, populate_item_score_map = True, region_area_map_condensers = region_area_map_condensers, controls = controls)
     #####################################################################################################
     # AptMarsh - END                                                                                    #
     #####################################################################################################

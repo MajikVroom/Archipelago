@@ -128,6 +128,279 @@ class MultiWorld():
         def __len__(self):
             return sum(len(regions) for regions in self.region_cache.values())
 
+    #####################################################################################################
+    # AptMarsh - Manager to store core data related to custom hint processing                           #
+    #####################################################################################################
+    custom_hints: CustomHintManager
+
+    class CustomHintManager:
+        settings: Dict[str,Union[bool, int, str]]
+        parent_multiworld: MultiWorld
+        random: random.Random
+        custom_hints: List[CustomHint]
+        region_area_map: Dict[int, Dict[str, str]]
+        areas_excluded: Set[str]
+        location_region_map: Dict[int, Dict[str,Tuple[Location, str]]]
+        item_score_map: Dict[int, Dict[int, int]]
+        items_unhintable: Set[Item]
+        items_excluded: Set[Item]
+        item_collection_spheres: List[Set[Location]]
+        hint_placeable_locations: Set[Location]
+        hint_placed_locations: List[Location]
+        goal_locations: Set[Location]
+        goal_display_types : Dict[str,str]
+        multidata: Dict[int,List[NetUtils.TriggerableHint]]
+
+
+        class CustomHint:
+            # Generic details
+            hint_type: str
+            hint_text: str
+            placed_location: Location
+            # For area hints
+            player: int
+            area: str
+            score: int
+            location_data: Dict[int,Tuple[int,Item]]
+
+            def __init__(self, hint_type: str, hint_text = 'Default hint text'):
+                self.hint_type = hint_type
+                self.hint_text = hint_text
+                self.score = 0
+
+            def place_hint(self, location: Location, players: Optional[int]) -> List[NetUtils.TriggerableHint]:
+                self.placed_location = location
+                netutils_hints = []
+                if self.hint_type == 'text':
+                    if not players:
+                        netutils_hints.append(NetUtils.TriggerableHint(NetUtils.TextHint(location.player, self.hint_text), 
+                                                NetUtils.LocationTrigger(location.player, location.address)))
+                    else:
+                        for player in range(1, players + 1):
+                            netutils_hints.append(NetUtils.TriggerableHint(NetUtils.TextHint(player, self.hint_text), 
+                                                    NetUtils.LocationTrigger(location.player, location.address)))
+                elif self.hint_type in ['item_value','hint_count']:
+                    self.update_score()
+                    # Old
+                    netutils_hints.append(
+                            NetUtils.TriggerableHint(NetUtils.RegionHint(self.player,
+                                                                         self.area,
+                                                                         self.score, 0),
+                                                                         NetUtils.LocationTrigger(location.player,
+                                                                                                  location.address)))
+                    # TBD - Brian, will need updated NetUtils before the new call can be used
+                    #NetUtils.LocationSetHint(self.player, self.area, self.hint_type, self.score, self.location_data)
+                return netutils_hints
+
+            def load_area_data(self, player: int, area: str, relevant_locations: List[Location], item_score_map: Dict[int, Dict[int, int]]):
+                self.player = player
+                self.area = area
+                self.location_data = {}
+                for location in [location for location in relevant_locations if location.address]:
+                    if self.hint_type == 'item_value' and location.item.player and location.item.code:
+                        self.location_data[location.address] = (item_score_map[location.item.player][location.item.code], location.item)
+                    elif self.hint_type == 'hint_count':
+                        self.location_data[location.address] = (1, None)
+                self.update_score()
+
+            def update_score(self):
+                self.score = 0
+                for location in self.location_data:
+                    self.score += self.location_data[location][0]
+                
+        def __init__(self, parent_multiworld: MultiWorld):
+            self.settings = { 'Generate_WOTH': True, 'WOTH_per_player': 6 }
+            self.parent_multiworld = parent_multiworld
+            self.custom_hints = []
+            self.region_area_map = {player: {} for player in range(1, parent_multiworld.players+1)}
+            self.areas_excluded = set()
+            self.location_region_map = {player: {} for player in range(1, parent_multiworld.players+1)}
+            self.item_score_map = {player: {} for player in range(1, parent_multiworld.players+1)}
+            self.items_unhintable = set()
+            self.items_excluded = set()
+            self.hint_placeable_locations = set()
+            self.hint_placed_locations = []
+            self.goal_locations = set()
+            self.goal_display_types = {}
+            self.multidata = {player: [] for player in range(1, parent_multiworld.players+1)}
+
+        def setting(self, setting_name: str, new_value = None) -> Union[bool, str, int]:
+            if new_value:
+                self.settings[setting_name] = new_value
+            return self.settings[setting_name]
+
+        def add_region(self, player: int, region: str, area: str):
+            self.region_area_map[player][region] = area
+        
+        def exclude_areas(self, areas: List[str]):
+            self.areas_excluded.update(areas)
+
+        def add_location(self, location: Location, region: Optional[str] = None):
+            if not region:
+                region = location.parent_region.name
+            if location.name not in self.location_region_map[location.player]:
+                self.location_region_map[location.player][location.name] = (location, region)
+            if (not location.advancement
+                and location.address
+                and location not in self.hint_placeable_locations
+                and location not in self.hint_placed_locations):
+                self.hint_placeable_locations.add(location)
+
+        def add_item_score(self, item: Item, score = 1):
+            if item.code:
+                self.item_score_map[item.player][item.code] = score
+
+        def add_unhintable_items(self, items: List[Item]):
+            self.items_unhintable.update(items)
+
+        def exclude_items(self, items: List[Item]):
+            self.items_excluded.update(items)
+
+        def hint_exclude_locations(self, locations: List[Location]):
+            for location in locations:
+                self.hint_placeable_locations.discard(location)
+        
+        def add_goals(self, locations: List[Tuple[Location,str]]):
+            self.goal_locations.update([location[0] for location in locations])
+            for location in locations:
+                self.goal_display_types[self.parent_multiworld.get_name_string_for_object(location[0])] = location[1]
+
+        def add_item_collection_spheres(self, spheres: List[Set[Location]]):
+            self.item_collection_spheres = spheres
+
+        def create_text_hint(self, hint_text: str):
+            self.custom_hints.append(self.CustomHint('text', hint_text))
+
+        def create_area_hints(self):
+            for player in range(1, self.parent_multiworld.players + 1):
+                for area in [area for area in set(self.region_area_map[player].values()) if area not in self.areas_excluded]:
+                    new_hint = self.CustomHint('item_value')
+                    new_hint.load_area_data(player,
+                                            area,
+                                            [self.location_region_map[player][loc_name][0] for loc_name in self.location_region_map[player]
+                                             if self.location_region_map[player][loc_name][0].advancement
+                                             and self.location_region_map[player][loc_name][1] in [region for region in self.region_area_map[player] if self.region_area_map[player][region] == area]
+                                             and self.location_region_map[player][loc_name][0].item not in self.items_excluded],
+                                            self.item_score_map)
+                    self.custom_hints.append(new_hint)
+
+        def create_hint_count_hints(self):
+            for player in range(1, self.parent_multiworld.players + 1):
+                for area in [area for area in set(self.region_area_map[player].values()) if area not in self.areas_excluded]:
+                    new_hint = self.CustomHint('hint_count')
+                    new_hint.load_area_data(player,
+                                            area,
+                                            [self.location_region_map[player][loc_name][0] for loc_name in self.location_region_map[player]
+                                             if self.location_region_map[player][loc_name][0] in self.hint_placed_locations
+                                             and self.location_region_map[player][loc_name][1] == area],
+                                            self.item_score_map)
+                    self.custom_hints.append(new_hint)
+
+        def create_woth_hints(self):
+            # Iterate through the spheres of required locations making a map of which locations in a sphere are required to access a location in the next sphere
+            requirement_map = {}
+            # Make a dictionary to store the goal locations that will have their names used as keys for the requirement map
+            location_store = {}
+            # Make a base state for the multiworld
+            state_base = CollectionState(self.parent_multiworld)
+            # Use an enumerated list of spheres to allow level comparison
+            spheres_enum = list(enumerate(self.item_collection_spheres))
+            # Track lists of locations used in required lists and not used to protect against a required location not beeing needed until several spheres later
+            locations_unused = []
+            locations_used = []
+            # Cycle through each sphere skipping the precollected and first layer which should all be accessible from precollected items
+            for i, sphere in spheres_enum:
+                if i > 0:
+                    # Create a copy of the used & unused locations before adding the new sphere, then load locations to be checked for requirement to the unused list
+                    locations_unused_start = locations_unused.copy()
+                    locations_used_start = locations_used.copy()
+                    custom_hints_requirement_candidates = spheres_enum[i-1][1].copy()
+                    custom_hints_requirement_candidates.update(locations_unused_start)
+                    for location in spheres_enum[i-1][1]:
+                        locations_unused.append(location)
+                    # Cycle through each location in the sphere and check for which candidate locations may be required
+                    for location in sorted(sphere):
+                        # Prepare the requirement map entry for this location and store the original location
+                        location_name = self.parent_multiworld.get_name_string_for_object(location)
+                        requirement_map[location_name] = []
+                        location_store[location_name] = location
+                        # Cycle through every candidate location for requirements
+                        for required_location_candidate in custom_hints_requirement_candidates:
+                            # Make a fresh state variable and precollect items from locations already used
+                            custom_hints_state_check = state_base.copy()
+                            for used_location in locations_used_start:
+                                custom_hints_state_check.collect(used_location.item, True, used_location)
+                            # Cycle through all candidate locations and collect items from all locations that are not the same as the current candidate
+                            for collect_location in custom_hints_requirement_candidates:
+                                if collect_location != required_location_candidate:
+                                    custom_hints_state_check.collect(collect_location.item, True, collect_location)
+                            custom_hints_state_check.sweep_for_events(key_only=True)
+                            # If the current location can't be reached without this candidate, handle mapping the connection
+                            if not custom_hints_state_check.can_reach(location):
+                                # Add the candidate to the lsit of requirements for this location
+                                requirement_map[location_name] += [required_location_candidate]
+                                # If the candidate hasn't been used already, move it from the unused to the used list
+                                if required_location_candidate in locations_unused:
+                                    locations_unused.remove(required_location_candidate)
+                                    locations_used.append(required_location_candidate)
+                                # If the candidate also has requirements, merge those requirements into this locations list
+                                required_location_name = self.parent_multiworld.get_name_string_for_object(required_location_candidate)
+                                if required_location_name in requirement_map:
+                                    requirement_map[location_name] += [location for location in requirement_map[required_location_name] if location not in requirement_map[location_name]]
+
+            # Filter the requirement map down to goal locations
+            goals_requirement_map = []
+            for location_name in requirement_map:
+                if location_store[location_name] in self.goal_locations:
+                    for requirement in requirement_map[location_name]:
+                        goals_requirement_map.append((location_store[location_name], requirement))
+            # Make the final list of WOTH hint candidates a unique set of requirement region to goal name
+            woth_candidates = {player: set() for player in range(1, self.parent_multiworld.players+1)}
+            for (goal, requirement) in [requirement for requirement in goals_requirement_map
+                                        if requirement[1].name in self.location_region_map[requirement[1].player]
+                                        and requirement[1].item not in self.items_unhintable]:
+                woth_text = self.region_area_map[requirement.player][self.location_region_map[requirement.player][requirement.name][1]]
+                if self.parent_multiworld.players > 1:
+                    woth_text += ' (' + self.parent_multiworld.get_player_name(requirement.player) + ')'
+                woth_text += ' is on the path of '
+                display_type = self.goal_display_types[self.parent_multiworld.get_name_string_for_object(goal)]
+                if display_type == 'Location':
+                    woth_text += self.parent_multiworld.get_name_string_for_object(goal)
+                else:
+                    woth_text += self.parent_multiworld.get_name_string_for_object(goal.item)
+
+                woth_candidates[requirement.player].add(woth_text)
+
+            # Choose and load a list of WOTH hints into the hint pool
+            for player in woth_candidates:
+                woth_candidates[player] = list(woth_candidates[player])
+                for i in range(self.settings['WOTH_per_player']):
+                    if len(woth_candidates[player]) > 0:
+                        self.create_text_hint(woth_candidates[player].pop())
+
+        def create_and_place_hints(self):
+            self.create_area_hints()
+            if self.settings['Generate_WOTH']:
+                self.create_woth_hints()
+
+            for hint in [hint for hint in self.custom_hints if hint.hint_type != 'hint_count']:
+                if len(self.hint_placeable_locations) > 0:
+                    location_to_place = self.hint_placeable_locations.pop()
+                    self.hint_placed_locations.append(location_to_place)
+                    self.multidata[location_to_place.player].append(hint.place_hint(location_to_place,self.parent_multiworld.players))
+            
+            self.create_hint_count_hints()
+
+            for hint in [hint for hint in self.custom_hints if hint.hint_type == 'hint_count']:
+                if len(self.hint_placeable_locations) > 0:
+                    location_to_place = self.hint_placeable_locations.pop()
+                    self.hint_placed_locations.append(location_to_place)
+                    self.multidata[location_to_place.player].append(hint.place_hint(location_to_place,self.parent_multiworld.players))
+    #####################################################################################################
+    # AptMarsh - END                                                                                    #
+    #####################################################################################################
+
+
     def __init__(self, players: int):
         # world-local random state is saved for multiple generations running concurrently
         self.random = ThreadBarrierProxy(random.Random())
@@ -155,6 +428,13 @@ class MultiWorld():
         self.local_early_items = {player: {} for player in self.player_ids}
         self.indirect_connections = {}
         self.start_inventory_from_pool: Dict[int, Options.StartInventoryPool] = {}
+    #####################################################################################################
+    # AptMarsh - Manager to store core data related to custom hint processing                           #
+    #####################################################################################################
+        self.custom_hints = self.CustomHintManager(self)
+    #####################################################################################################
+    # AptMarsh - END                                                                                    #
+    #####################################################################################################
 
         for player in range(1, players + 1):
             def set_player_attr(attr, val):
@@ -1315,6 +1595,13 @@ class Spoiler:
         for i, sphere in enumerate(collection_spheres):
             self.playthrough[str(i + 1)] = {
                 str(location): str(location.item) for location in sorted(sphere)}
+        #####################################################################################################
+        # AptMarsh - Expose required sphere locations for the custom hint system                            #
+        #####################################################################################################
+        self.multiworld.custom_hints.add_item_collection_spheres(collection_spheres.copy())
+        #####################################################################################################
+        # AptMarsh - END                                                                                    #
+        #####################################################################################################
         if create_paths:
             self.create_paths(state, collection_spheres)
 
@@ -1361,7 +1648,7 @@ class Spoiler:
                         self.paths[str(multiworld.get_region('Inverted Big Bomb Shop', player))] = \
                             get_path(state, multiworld.get_region('Inverted Big Bomb Shop', player))
 
-    def to_file(self, filename: str, custom_hints_data: List = []) -> None:
+    def to_file(self, filename: str, custom_hints_data: Dict[int,List[NetUtils.TriggerableHint]] = {}) -> None:
         from itertools import chain
         from worlds import AutoWorld
         from Options import Visibility
@@ -1441,10 +1728,12 @@ class Spoiler:
             #####################################################################################################
             # AptMarsh - Custom hint processing and add to data package                                         #
             #####################################################################################################
-            outfile.write('\n\nHello World\n')
-            
-            outfile.write('\n'.join(
-                ['Type: %s __ Trigger: %s __ Location: %s __ Hint: "%s"' % (custom_hint['type'], custom_hint['unlock_trigger'], custom_hint['location'].name, custom_hint['text']) for custom_hint in custom_hints_data]))
+            outfile.write('\n\n')
+            for player in custom_hints_data:
+                for hint in custom_hints_data[player]:
+                    outfile.write(hint[0].__str__())
+                    outfile.write('\n')
+                #['Type: %s __ Trigger: %s __ Location: %s __ Hint: \n%s' % (custom_hint['type'], custom_hint['unlock_trigger'], custom_hint['location'].name, custom_hint['text']) for custom_hint in custom_hints_data]))
             #####################################################################################################
             # AptMarsh - END                                                                                    #
             #####################################################################################################
