@@ -543,82 +543,76 @@ class KH2World(World):
     # AptMarsh - Custom hint processing                                                                 #
     #####################################################################################################
     def custom_hints_data_populate(self) -> None:
-        # Common controls for the hint generation system
-        custom_hints_areas_mapping = {}
-        custom_hints_areas_in = None
-        custom_hints_excluded_areas = []
-        custom_hints_condensers = []
-        custom_hints_excluded_items = []
-        custom_hints_unhintable_items = []
-        
-        # Manually build areas mapping based on the larger standard areas we have used as a standard
-        for region in [location.parent_region.name for location in self.multiworld.get_locations(player=self.player) if location.item.code]:
-            if region == 'Shan Yu':
-                custom_hints_areas_mapping[region] = 'Land of Dragons'
-            elif region == 'Ansem Riku' or region == 'Storm Rider':
-                custom_hints_areas_mapping[region] = 'Land of Dragons 2'
-            elif region == 'Twin Lords':
-                custom_hints_areas_mapping[region] = 'Agrabah'
-            elif region == 'Genie Jafar':
-                custom_hints_areas_mapping[region] = 'Agrabah 2'
-            elif region == 'Old Pete' or region == 'Future Pete' or region == 'Terra':
-                custom_hints_areas_mapping[region] = 'Timeless River'
-            elif region == "Pooh's House" or region == "Piglet's House" or region == "Rabbit's House" or region == "Roo's House" or region == 'Spooky Cave' or region == 'Starry Hill':
-                custom_hints_areas_mapping[region] = '100 Acre Wood'
-            elif region == 'Barbosa':
-                custom_hints_areas_mapping[region] = 'Port Royal'
-            elif region == 'Grim Reaper 1' or region == 'Grim Reaper 2':
-                custom_hints_areas_mapping[region] = 'Port Royal 2'
-            elif region == 'Cerberus' or region == 'Olympus Pete' or region == 'Hydra':
-                custom_hints_areas_mapping[region] = 'Olympus Coliseum'
-            elif region == 'Hades':
-                custom_hints_areas_mapping[region] = 'Olympus Coliseum 2'
-            elif region == 'Pain and Panic Cup' or region == 'Cerberus Cup' or region == 'Titan Cup' or region == 'Goddess of Fate Cup' or region == "Olympus Coliseum Hade's Paradox":
-                custom_hints_areas_mapping[region] = 'Underdome Cups'
-            elif region == 'Thresholder' or region == 'Beast' or region == 'Dark Thorn':
-                custom_hints_areas_mapping[region] = "Beast's Castle"
-            elif region == 'Xaldin':
-                custom_hints_areas_mapping[region] = "Beast's Castle 2"
-            elif region == 'Hostile Program':
-                custom_hints_areas_mapping[region] = "Space Paranoids"
-            elif region == 'Master Control Program':
-                custom_hints_areas_mapping[region] = "Space Paranoids 2"
-            elif region == 'Prison Keeper' or region == 'Oogie Boogie':
-                custom_hints_areas_mapping[region] = 'Holloween Town'
-            elif region == 'The Experiment':
-                custom_hints_areas_mapping[region] = 'Holloween Town 2'
-            elif region == 'Hollow Bastion Demyx' or region == 'Thousand Heartless':
-                custom_hints_areas_mapping[region] = 'Hollow Bastion 2'
-            elif region == 'Cavern of Rememberance:Fight 1' or region == 'Cavern of Rememberance:Fight 2' or region == 'Transport to Rememberance':
-                custom_hints_areas_mapping[region] = 'Cavern of Rememberance'
-            elif region == 'Scar':
-                custom_hints_areas_mapping[region] = 'Pride Lands'
-            elif region == 'Groundshaker':
-                custom_hints_areas_mapping[region] = 'Pride Lands 2'
-            elif region == 'Simulated Twilight Town' or region == 'Twilight Thorn' or region == 'Axel 1' or region == 'Axel 2':
-                custom_hints_areas_mapping[region] = 'Prison'
-            elif region == 'Twilight Town 2' or region == 'Twilight Town 3':
-                custom_hints_areas_mapping[region] = 'Twilight Town'
-            elif region == 'The World That Never Was (Pre Roxas)' or region == 'Roxas' or region == 'Xigbar' or region == 'Luxord' or region == 'Saix':
-                custom_hints_areas_mapping[region] = 'The World That Never Was'
-            elif region == 'The World That Never Was (Second Visit)' or region == 'Xemnas':
-                custom_hints_areas_mapping[region] = 'The World That Never Was 2'
-            elif region.startswith('Atlantica '):
-                custom_hints_areas_mapping[region] = 'Atlantica'
-            elif region == 'Valor Form' or region == 'Wisdom Form' or region == 'Limit Form' or region == 'Master Form' or region == 'Final Form':
-                custom_hints_areas_mapping[region] = 'Drive Forms'
-            elif region.startswith('Levels '):
-                custom_hints_areas_mapping[region] = "Sora's Heart"
-                 
-            else:
-                custom_hints_areas_mapping[region] = region
-                
-        
-        # Populate common custom hint data using the parent function
-        super().custom_hints_data_populate(custom_hints_areas_mapping, custom_hints_areas_in, custom_hints_excluded_areas, custom_hints_condensers, custom_hints_excluded_items, custom_hints_unhintable_items)
+        controls = { 'excluded_areas' : [],
+                    'excluded_items' : [],
+                    'unhintable_items': [],
+                    'goal_items': ['Proof of Connection', 'Proof of Nonexistence', 'Proof of Peace'],
+                    'goal_locations' : []}
+        region_area_map_condensers = []
 
-        # Populate common custom hint data using the parent function
-        super().custom_hints_data_populate(custom_hints_areas_mapping, custom_hints_areas_in, custom_hints_excluded_areas, custom_hints_condensers, custom_hints_excluded_items, custom_hints_unhintable_items)
+        for region in set([location.parent_region.name for location in self.multiworld.get_locations(player=self.player) if location.item.code]):
+            if region == 'Shan Yu':
+                area = 'Land of Dragons'
+            elif region == 'Ansem Riku' or region == 'Storm Rider':
+                area = 'Land of Dragons 2'
+            elif region == 'Twin Lords':
+                area = 'Agrabah'
+            elif region == 'Genie Jafar':
+                area = 'Agrabah 2'
+            elif region == 'Old Pete' or region == 'Future Pete' or region == 'Terra':
+                area = 'Timeless River'
+            elif region == "Pooh's House" or region == "Piglet's House" or region == "Rabbit's House" or region == "Roo's House" or region == 'Spooky Cave' or region == 'Starry Hill':
+                area = '100 Acre Wood'
+            elif region == 'Barbosa':
+                area = 'Port Royal'
+            elif region == 'Grim Reaper 1' or region == 'Grim Reaper 2':
+                area = 'Port Royal 2'
+            elif region == 'Cerberus' or region == 'Olympus Pete' or region == 'Hydra':
+                area = 'Olympus Coliseum'
+            elif region == 'Hades':
+                area = 'Olympus Coliseum 2'
+            elif region == 'Pain and Panic Cup' or region == 'Cerberus Cup' or region == 'Titan Cup' or region == 'Goddess of Fate Cup' or region == "Olympus Coliseum Hade's Paradox":
+                area = 'Underdome Cups'
+            elif region == 'Thresholder' or region == 'Beast' or region == 'Dark Thorn':
+                area = "Beast's Castle"
+            elif region == 'Xaldin':
+                area = "Beast's Castle 2"
+            elif region == 'Hostile Program':
+                area = "Space Paranoids"
+            elif region == 'Master Control Program':
+                area = "Space Paranoids 2"
+            elif region == 'Prison Keeper' or region == 'Oogie Boogie':
+                area = 'Holloween Town'
+            elif region == 'The Experiment':
+                area = 'Holloween Town 2'
+            elif region == 'Hollow Bastion Demyx' or region == 'Thousand Heartless':
+                area = 'Hollow Bastion 2'
+            elif region == 'Cavern of Rememberance:Fight 1' or region == 'Cavern of Rememberance:Fight 2' or region == 'Transport to Rememberance':
+                area = 'Cavern of Rememberance'
+            elif region == 'Scar':
+                area = 'Pride Lands'
+            elif region == 'Groundshaker':
+                area = 'Pride Lands 2'
+            elif region == 'Simulated Twilight Town' or region == 'Twilight Thorn' or region == 'Axel 1' or region == 'Axel 2':
+                area = 'Prison'
+            elif region == 'Twilight Town 2' or region == 'Twilight Town 3':
+                area = 'Twilight Town'
+            elif region == 'The World That Never Was (Pre Roxas)' or region == 'Roxas' or region == 'Xigbar' or region == 'Luxord' or region == 'Saix':
+                area = 'The World That Never Was'
+            elif region == 'The World That Never Was (Second Visit)' or region == 'Xemnas':
+                area = 'The World That Never Was 2'
+            elif region.startswith('Atlantica '):
+                area = 'Atlantica'
+            elif region == 'Valor Form' or region == 'Wisdom Form' or region == 'Limit Form' or region == 'Master Form' or region == 'Final Form':
+                area = 'Drive Forms'
+            elif region.startswith('Levels '):
+                area = "Sora's Heart"     
+            else:
+                area = region
+            
+            self.multiworld.custom_hints.add_region(self.player, region, area)
+
+        super().custom_hints_data_populate(populate_region_area_map = False, populate_location_region_map = True, populate_item_score_map = True, region_area_map_condensers = region_area_map_condensers, controls = controls)
     #####################################################################################################
     # AptMarsh - END                                                                                    #
     #####################################################################################################
