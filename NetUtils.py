@@ -8,6 +8,7 @@ from json import JSONEncoder, JSONDecoder
 import websockets
 
 from Utils import ByValue, Version
+from dataclasses import dataclass, is_dataclass, asdict
 
 
 class JSONMessagePart(typing.TypedDict, total=False):
@@ -85,6 +86,10 @@ class NetworkItem(typing.NamedTuple):
 def _scan_for_TypedTuples(obj: typing.Any) -> typing.Any:
     if isinstance(obj, tuple) and hasattr(obj, "_fields"):  # NamedTuple is not actually a parent class
         data = obj._asdict()
+        data["class"] = obj.__class__.__name__
+        return data
+    if is_dataclass(obj):
+        data = asdict(obj)
         data["class"] = obj.__class__.__name__
         return data
     if isinstance(obj, (tuple, list, set, frozenset)):
@@ -348,38 +353,176 @@ class Hint(typing.NamedTuple):
 
 # Unlock conditions for an inner hint
 class TriggerableHint(typing.NamedTuple):
-    hint: TextHint | RegionHint
+    hint: TextHint | LocationSetHint
     trigger: LocationTrigger | FreeTrigger
-
-class TextHint(typing.NamedTuple):
-    player: int
-    text: str  # TODO Majik: region IDs? Would need IDs to be defined in the data package
-
-    def __hash__(self):
-        # TODO Majik: called?
-        return hash((self.text, self.player))
-
-class RegionHint(typing.NamedTuple):
-    player: int
-    region: str  # TODO Majik: region IDs? Would need IDs to be defined in the data package
-    total_items: int
-    found_items: int
     
-    def re_check(self, ctx, team) -> RegionHint:
-        # TODO Majik: use ctx to calculate the number of found items within the region. If different than found_items, return a new Regionhint with appropriate found_items.
-        # Do we actually need to support recalculating from scratch? Or can we maintain the right number? Might be mostly about minimizing save size or data duplication?
+    @staticmethod
+    def index_all(ctx):
+        for triggerable_hint in ctx.triggerable_hints:
+            triggerable_hint.hint.index(ctx, triggerable_hint)
+            triggerable_hint.trigger.index(ctx, triggerable_hint)
+    
+    @staticmethod
+    def ensure_team_init(ctx, team):
+        if not ctx.triggerable_hints:
+            return
+        all_team_data = ctx.triggerable_hint_state.setdefault("team_data", {})
+        if team in all_team_data:
+            return
+
+        # Init all per-team triggerable hint data
+        ctx.triggerable_hint_state["team_data"][team] = {}
+        for triggerable_hint in ctx.triggerable_hints:
+            triggerable_hint.hint.init_team_data(ctx, team, triggerable_hint)
+            # No triggers currently create per-team data.
+
+        FreeTrigger.release_all(ctx, team)
+
+    @staticmethod
+    def get_released_hints_for_type(ctx, team, player, hint_type) -> typing.List[TriggeredHint]:
+        TriggerableHint.ensure_team_init(ctx, team)
+        released_hints = []
+        for triggered_hint in TriggeredHint.get_team_data_for_type(ctx, team, hint_type).keys():
+            if player in triggered_hint.released_to(ctx, team):
+                released_hints.append(triggered_hint.re_check(ctx, team))
+        return released_hints
+    
+    @staticmethod
+    def need_update_for_type(ctx, team, player, hint_type) -> bool:
+        TriggerableHint.ensure_team_init(ctx, team)
+        for triggered_hint in TriggeredHint.get_team_data_for_type(ctx, team, hint_type).keys():
+            if triggered_hint.needs_update(ctx, team):
+                return True
+        return False
+
+    def release(self, ctx, team):
+        if self.hint.release(ctx, team):
+            for player in self.hint.released_to(ctx, team):
+                ctx.on_changed_triggerable_hints(team, player, self.hint.__class__)
+            # TODO Majik: broadcast to appropriate audience
+            pass
+
+class TriggeredHint:
+    @staticmethod
+    def get_team_data_for_type(ctx, team, hint_type):
+        return ctx.triggerable_hint_state["team_data"][team].get(hint_type, {})
+    
+    def index(self, ctx, parent_triggerable_hint):
+        pass
+
+    def init_team_data(self, ctx, team, triggerable_hint):
+        hint_data = ctx.triggerable_hint_state["team_data"][team].setdefault(type(self), {}).setdefault(self, {})
+        hint_data["release_state"] = "unreleased"
+        hint_data["release_data"] = None
+
+    def get_team_data(self, ctx, team):
+        return ctx.triggerable_hint_state["team_data"][team][type(self)][self]
+    
+    def release(self, ctx, team) -> bool:
+        if self.get_team_data(ctx, team)["release_state"] == "unreleased":
+            self.get_team_data(ctx, team)["release_state"] = "stale"
+            self.re_check(ctx, team)
+            return True
+        return False
+    
+    def needs_update(self, ctx, team) -> bool:
+        return self.get_team_data(ctx, team)["release_state"] == "stale"
+
+    def mark_stale(self, ctx, team):
+        if self.get_team_data(ctx, team)["release_state"] != "unreleased":
+            self.get_team_data(ctx, team)["release_state"] = "stale"
+
+    def re_check(self, ctx, team) -> TriggeredHint:
+        hint_data = self.get_team_data(ctx, team)
+        if (hint_data["release_state"]) == "stale":
+            hint_data["release_data"] = self.get_release_data(ctx, team)
+            hint_data["release_state"] = "fresh"
+        
+        if (hint_data["release_state"]) == "fresh":
+            return hint_data["release_data"]
+        else:
+            raise Exception("Called re_check on unreleased hint")
+
+    def released_to(self, ctx, team):
+        raise NotImplementedError("Need to decide who sees this hint")
+        
+    def get_release_data(self, ctx, team) -> TriggeredHint:
+        # Returns a copy to release to the clients. This allows specializing with dynamic data, holding back stuff the client hasn't earned yet, etc.
         return self
 
-    def __hash__(self):
-        # TODO Majik: called?
-        return hash((self.region, self.player, self.total_items, self.found_items))
+@dataclass(frozen=True)
+class TextHint(TriggeredHint):
+    player: int
+    text: str
 
-class LocationTrigger(typing.NamedTuple):
+    def released_to(self, ctx, team):
+        if self.get_team_data(ctx, team)["release_state"] == "unreleased":
+            return []
+        return [self.player]
+
+    def __hash__(self):
+        return hash((self.text, self.player))
+
+@dataclass(frozen=True)
+class LocationSetHint(TriggeredHint):
+    player: int
+    label: str
+    set_kind: str  # Indicates semantics, as well as what "object" will be in per_location_data
+    total_value: int
+    per_location_data: typing.Dict[int, typing.Tuple[int, object]]  # Maps locations to a tuple containing point value and other data interesting for tracking (e.g. item ID)
+    
+    @staticmethod
+    def update_for_location_check(ctx, team, player, location):
+        # We index the locations listed in per_location_data, and when those locations are checked, we need to give clients an updated version of the hint.
+        for triggerable_hint in ctx.triggerable_hint_state.get("indexes", {}).get(LocationSetHint, {}).get(player, {}).get(location, []):
+            triggerable_hint.hint.mark_stale(ctx, team)
+
+    def index(self, ctx, parent_triggerable_hint):
+        player_data = ctx.triggerable_hint_state.setdefault("indexes", {}).setdefault(LocationSetHint, {}).setdefault(self.player, {})
+        for location in self.per_location_data.keys():
+            player_data.setdefault(location, []).append(parent_triggerable_hint)
+
+    def get_release_data(self, ctx, team):
+        # Before releasing to the client, we need to filter down to just the locations they've actually checked. That gives them a current point total.
+        filtered_per_location_data = {location : location_data for (location, location_data) in self.per_location_data.items() if location in ctx.location_checks[team, self.player]}
+        return LocationSetHint(self.player, self.label, self.set_kind, self.total_value, filtered_per_location_data)
+
+    def released_to(self, ctx, team):
+        if self.get_team_data(ctx, team)["release_state"] == "unreleased":
+            return []
+        return [self.player]
+
+    def __hash__(self):
+        return hash((self.player, self.label, self.set_kind, self.total_value))
+
+class Trigger:
+    def index(self, ctx, parent_triggerable_hint):
+        raise NotImplementedError("Triggers aren't very useful if not indexed")
+
+@dataclass(frozen=True)
+class FreeTrigger(Trigger):
+    @staticmethod
+    def release_all(ctx, team):
+        for triggerable_hint in ctx.triggerable_hint_state.get("indexes", {}).get(FreeTrigger, []):
+            triggerable_hint.release(ctx, team)
+
+    def index(self, ctx, parent_triggerable_hint):
+        free_data = ctx.triggerable_hint_state.setdefault("indexes", {}).setdefault(FreeTrigger, [])
+        free_data.append(parent_triggerable_hint)
+
+@dataclass(frozen=True)
+class LocationTrigger(Trigger):
     player: int
     location: int
-
-class FreeTrigger(typing.NamedTuple):
-    pass
+    
+    @staticmethod
+    def release_for_location_check(ctx, team, player, location):
+        for triggerable_hint in ctx.triggerable_hint_state.get("indexes", {}).get(LocationTrigger, {}).get(player, {}).get(location, []):
+            triggerable_hint.release(ctx, team)
+    
+    def index(self, ctx, parent_triggerable_hint):
+        location_data = ctx.triggerable_hint_state.setdefault("indexes", {}).setdefault(LocationTrigger, {}).setdefault(self.player, {}).setdefault(self.location, [])
+        location_data.append(parent_triggerable_hint)
 
 class _LocationStore(dict, typing.MutableMapping[int, typing.Dict[int, typing.Tuple[int, int, int]]]):
     def __init__(self, values: typing.MutableMapping[int, typing.Dict[int, typing.Tuple[int, int, int]]]):

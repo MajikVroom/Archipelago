@@ -217,10 +217,7 @@ class Context:
         self.hints_used = collections.defaultdict(int)
         self.hints: typing.Dict[team_slot, typing.Set[NetUtils.Hint]] = collections.defaultdict(set)
         self.triggerable_hints : typing.Dict[int, typing.List[NetUtils.TriggerableHint]] = collections.defaultdict(list)
-        self.location_triggered_hint_index: typing.Dict[int, typing.Dict[int, typing.List[NetUtils.TriggerableHint]]] = collections.defaultdict(lambda: collections.defaultdict(list)) # inner dict: location -> hints locked by that location
-        self.free_triggered_hint_state: typing.Set[team_slot] = set()
-        self.released_text_hints: typing.Dict[team_slot, typing.List[NetUtils.TextHint]] = collections.defaultdict(list)
-        self.released_region_hints: typing.Dict[team_slot, typing.Dict[str, NetUtils.RegionHint]] = collections.defaultdict(dict)
+        self.triggerable_hint_state = collections.defaultdict(dict)
         self.release_mode: str = release_mode
         self.remaining_mode: str = remaining_mode
         self.collect_mode: str = collect_mode
@@ -445,8 +442,8 @@ class Context:
                 list(self.get_rechecked_hints(local_team, local_player))
             self.read_data[f"text_hints_{0}_{slot_id}"] = lambda local_team=0, local_player=slot_id: \
                 self.get_text_hints(local_team, local_player)
-            self.read_data[f"region_hints_{0}_{slot_id}"] = lambda local_team=0, local_player=slot_id: \
-                self.get_region_hints(local_team, local_player)
+            self.read_data[f"location_set_hints_{0}_{slot_id}"] = lambda local_team=0, local_player=slot_id: \
+                self.get_location_set_hints(local_team, local_player)
             self.read_data[f"client_status_{0}_{slot_id}"] = lambda local_team=0, local_player=slot_id: \
                 self.client_game_state[local_team, local_player]
 
@@ -467,8 +464,13 @@ class Context:
         for slot, hints in decoded_obj["precollected_hints"].items():
             self.hints[0, slot].update(hints)
 
-        self.triggerable_hints = decoded_obj["triggerable_hints"]
-        self.index_triggerable_hints()
+        fake_triggerable_hints = [NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint is free"), NetUtils.FreeTrigger()),
+                                  NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint is triggered"), NetUtils.LocationTrigger(1, 16777382)),
+                                  NetUtils.TriggerableHint(NetUtils.LocationSetHint(1, "Lake Hylia", "region_items", 3, {16777382 : (2, None), 12345 : (1, None)}), NetUtils.FreeTrigger())]
+        
+        # self.triggerable_hints = decoded_obj["triggerable_hints"]
+        self.triggerable_hints = fake_triggerable_hints
+        NetUtils.TriggerableHint.index_all(self)
 
         # declare slots that aren't players as done
         for slot, slot_info in self.slot_info.items():
@@ -658,43 +660,12 @@ class Context:
     def get_rechecked_hints(self, team: int, slot: int):
         self.recheck_hints(team, slot)
         return self.hints[team, slot]
-    
-    def ensure_free_hints(self, team: int, slot: int):
-        if not (team, slot) in self.free_triggered_hint_state:
-            for triggerable_hint in self.triggerable_hints[slot]:
-                if isinstance(triggerable_hint.trigger, NetUtils.FreeTrigger):
-                    # TODO Majik: refactor hint triggers
-                    if isinstance(triggerable_hint.hint, NetUtils.TextHint):
-                        self.released_text_hints[team, triggerable_hint.hint.player].append(triggerable_hint.hint)
-                    elif isinstance(triggerable_hint.hint, NetUtils.RegionHint):
-                        self.released_region_hints[team, triggerable_hint.hint.player][triggerable_hint.hint.region] = triggerable_hint.hint.re_check(self, team)
-            self.free_triggered_hint_state.add((team, slot))
 
     def get_text_hints(self, team: int, slot: int):
-        self.ensure_free_hints(team, slot)
-        return self.released_text_hints[team, slot]
+        return NetUtils.TriggerableHint.get_released_hints_for_type(self, team, slot, NetUtils.TextHint)
 
-    def get_region_hints(self, team: int, slot: int):
-        self.ensure_free_hints(team, slot)
-        for region, region_hint in self.released_region_hints[team, slot].items():
-            self.released_region_hints[team, slot][region] = region_hint.re_check(self, team)
-        return list(self.released_region_hints[team, slot].values())
-    
-    def index_triggerable_hints(self):
-        for slot, hintList in self.triggerable_hints.items():
-            for hint in hintList:
-                if isinstance(hint.trigger, NetUtils.LocationTrigger):
-                    self.location_triggered_hint_index[hint.trigger.player][hint.trigger.location].append(hint)
-
-    def get_triggered_hints(self, team: int, slot: int):
-        ret = []
-        for triggered_hint in self.triggerable_hints[slot]:
-            if isinstance(triggered_hint.trigger, NetUtils.FreeTrigger):
-                ret.append(triggered_hint.hint)
-            elif isinstance(triggered_hint.trigger, NetUtils.LocationTrigger):
-                if triggered_hint.trigger.location in self.location_checks[team, triggered_hint.trigger.player]:
-                    ret.append(triggered_hint.hint)
-        return ret
+    def get_location_set_hints(self, team: int, slot: int):
+        return NetUtils.TriggerableHint.get_released_hints_for_type(self, team, slot, NetUtils.LocationSetHint)
 
     def get_sphere(self, player: int, location_id: int) -> int:
         """Get sphere of a location, -1 if spheres are not available."""
@@ -802,17 +773,17 @@ class Context:
         if targets:
             self.broadcast(targets, [{"cmd": "SetReply", "key": key, "value": self.hints[team, slot]}])
     
-    def on_changed_text_hints(self, team: int, slot: int):
-        key: str = f"_read_text_hints_{team}_{slot}"
+    def on_changed_triggerable_hints(self, team: int, slot: int, hint_type: type):
+        key: str
+        if hint_type is NetUtils.TextHint:
+            key = f"_read_text_hints_{team}_{slot}"
+        elif hint_type is NetUtils.LocationSetHint:
+            key = f"_read_location_set_hints_{team}_{slot}"
+        else:
+            raise NotImplementedError("Hint type not mapped to entry point")
         targets: typing.Set[Client] = set(self.stored_data_notification_clients[key])
         if targets:
-            self.broadcast(targets, [{"cmd": "SetReply", "key": key, "value": self.released_text_hints[team, slot]}])
-    
-    def on_changed_region_hints(self, team: int, slot: int):
-        key: str = f"_read_region_hints_{team}_{slot}"
-        targets: typing.Set[Client] = set(self.stored_data_notification_clients[key])
-        if targets:
-            self.broadcast(targets, [{"cmd": "SetReply", "key": key, "value": list(self.released_region_hints[team, slot].values())}])
+            self.broadcast(targets, [{"cmd": "SetReply", "key": key, "value": NetUtils.TriggerableHint.get_released_hints_for_type(self, team, slot, hint_type)}])
 
     def on_client_status_change(self, team: int, slot: int):
         key: str = f"_read_client_status_{team}_{slot}"
@@ -1076,13 +1047,15 @@ def register_location_checks(ctx: Context, team: int, slot: int, locations: typi
             item_id, target_player, flags = ctx.locations[slot][location]
             new_item = NetworkItem(item_id, location, slot, flags)
             send_items_to(ctx, team, target_player, new_item)
-            trigger_hints_from_location(ctx, team, slot, location)
 
             ctx.logger.info('(Team #%d) %s sent %s to %s (%s)' % (
                 team + 1, ctx.player_names[(team, slot)], ctx.item_names[ctx.slot_info[target_player].game][item_id],
                 ctx.player_names[(team, target_player)], ctx.location_names[ctx.slot_info[slot].game][location]))
             info_text = json_format_send_event(new_item, target_player)
             ctx.broadcast_team(team, [info_text])
+
+            NetUtils.LocationSetHint.update_for_location_check(ctx, team, slot, location)
+            NetUtils.LocationTrigger.release_for_location_check(ctx, team, slot, location)
 
         ctx.location_checks[team, slot] |= new_locations
         send_new_items(ctx)
@@ -1095,7 +1068,10 @@ def register_location_checks(ctx: Context, team: int, slot: int, locations: typi
         ctx.recheck_hints(team, slot)
         if old_hints != ctx.hints[team, slot]:
             ctx.on_changed_hints(team, slot)
-        # TODO Majik: recheck_region_hints
+        
+        if NetUtils.TriggerableHint.need_update_for_type(ctx, team, slot, NetUtils.LocationSetHint):
+            ctx.on_changed_triggerable_hints(team, slot, NetUtils.LocationSetHint)
+
         ctx.save()
 
 
@@ -1131,24 +1107,6 @@ def collect_hint_location_id(ctx: Context, team: int, slot: int, seeked_location
         entrance = ctx.er_hint_data.get(slot, {}).get(seeked_location, "")
         return [NetUtils.Hint(receiving_player, slot, seeked_location, item_id, found, entrance, item_flags)]
     return []
-
-def trigger_hints_from_location(ctx: Context, team: int, finding_player: int, location: int):
-    updated_hint_recipients = set()
-    for triggered_hint in ctx.location_triggered_hint_index[finding_player][location]:
-        # Note: for mutable hints such as RegionHint, the mutable data is only kept up to date within the released data.
-        # TODO Majik: refactor
-        if isinstance(triggered_hint.hint, NetUtils.TextHint):
-            ctx.released_text_hints[team, triggered_hint.hint.player].append(triggered_hint.hint)
-            updated_hint_recipients.add((triggered_hint.hint.player, NetUtils.TextHint))
-        elif isinstance(triggered_hint.hint, NetUtils.RegionHint):
-            ctx.released_region_hints[team, triggered_hint.hint.player][triggered_hint.hint.region] = triggered_hint.hint.re_check(ctx, team)
-            updated_hint_recipients.add((triggered_hint.hint.player, NetUtils.RegionHint))
-    for recipient, hintType in updated_hint_recipients:
-        if (hintType is NetUtils.TextHint):
-            ctx.on_changed_text_hints(team, recipient)
-        elif (hintType is NetUtils.RegionHint):
-            ctx.on_changed_region_hints(team, recipient)
-
 
 def format_hint(ctx: Context, team: int, hint: NetUtils.Hint) -> str:
     text = f"[Hint]: {ctx.player_names[team, hint.receiving_player]}'s " \
@@ -1548,6 +1506,28 @@ class ClientMessageProcessor(CommonCommandProcessor):
             else:
                 self.output(response)
                 return False
+        else:
+            self.output("Cheating is disabled.")
+            return False
+
+    @mark_raw
+    def _cmd_check(self, location_str: str) -> bool:
+        """Cheat in a location check"""
+        # TODO Majik: Remove? Pretty much just a debug command.
+        if self.ctx.item_cheat:
+            try:
+                parsed_location = int(location_str)
+            except:
+                parsed_location = None
+
+            if parsed_location is None or parsed_location not in self.ctx.locations[self.client.slot]:
+                self.output("Invalid location ID")
+                return False
+            self.ctx.broadcast_text_all(
+                'Cheat console: checking location ID ' + location_str + ' for ' + self.ctx.get_aliased_name(self.client.team, self.client.slot),
+                {"type": "CheckCheat", "team": self.client.team, "receiving": self.client.slot, "location": parsed_location})
+            register_location_checks(self.ctx, self.client.team, self.client.slot, [parsed_location])
+            return True
         else:
             self.output("Cheating is disabled.")
             return False

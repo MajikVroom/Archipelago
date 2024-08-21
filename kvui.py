@@ -777,8 +777,8 @@ class GameManager(App):
     def update_hints(self):
         hints = self.ctx.stored_data[f"_read_hints_{self.ctx.team}_{self.ctx.slot}"]
         self.log_panels["Hints"].refresh_hints(hints)
-        regionHints = self.ctx.stored_data[f"_read_region_hints_{self.ctx.team}_{self.ctx.slot}"]
-        self.log_panels["Regions"].refresh_hints(regionHints)
+        location_set_hints = self.ctx.stored_data[f"_read_location_set_hints_{self.ctx.team}_{self.ctx.slot}"]
+        self.log_panels["Regions"].refresh_hints(location_set_hints)
         textHints = self.ctx.stored_data[f"_read_text_hints_{self.ctx.team}_{self.ctx.slot}"]
         self.log_panels["TextHints"].refresh_hints(textHints)
 
@@ -937,16 +937,24 @@ class RegionHintLog(RecycleView):
         self.data = [self.header]
         self.parser = parser
     
-    def refresh_hints(self, regions):
+    def refresh_hints(self, location_set_hints):
         data = []
-        for region in regions:
-            data.append({
-                "region": {"text": self.parser.handle_node({"type": "text", "text": region["region"]})},
-                "total": {"text": self.parser.handle_node({"type": "text", "text": str(region["total_items"])})},
-                "found": {"text": self.parser.handle_node({"type": "text", "text": str(region["found_items"])})},
-                "unfound": {"text": self.parser.handle_node({"type": "color", "text": str(region["total_items"] - region["found_items"]),
-                                                             "color": "green" if region["total_items"] - region["found_items"] == 0 else "red" if region["found_items"] == 0 else "blue"})},
-            })
+        for location_set_hint in location_set_hints:
+            if location_set_hint["set_kind"] == "region_items":
+                found_value = 0
+                for (location, location_data) in location_set_hint["per_location_data"].items():
+                    found_value += location_data[0]
+                data.append({
+                    "region": {"text": self.parser.handle_node({"type": "text", "text": location_set_hint["label"]})},
+                    "total": {"text": self.parser.handle_node({"type": "text", "text": str(location_set_hint["total_value"])})},
+                    "found": {"text": self.parser.handle_node({"type": "text", "text": str(found_value)})},
+                    "unfound": {"text": self.parser.handle_node({"type": "color", "text": str(location_set_hint["total_value"] - found_value),
+                                                                "color": "green" if location_set_hint["total_value"] - found_value == 0 else "red" if found_value == 0 else "blue"})},
+                })
+            elif location_set_hint["set_kind"] == "region_hints":
+                # TODO Majik: hint hinting
+                pass
+
 
         data.sort(key=self.hint_sorter, reverse=self.reversed)
         data.insert(0, self.header)
