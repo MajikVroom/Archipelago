@@ -465,26 +465,33 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                 # AptMarsh - Custom hint packaging for server side                                                  #
                 #####################################################################################################
                 custom_hints_multidata = {}
-              #  for hint in custom_hints:
-              #      if hint['location'].player not in custom_hints_multidata:
-              #          custom_hints_multidata[hint['location'].player] = []
-              #      if hint['type'] == 'area':
-              #          custom_hints_multidata[hint['location'].player].append(
-              #              NetUtils.TriggerableHint(NetUtils.RegionHint(hint['player'],
-              #                                                           hint['area'],
-              #                                                           hint['key_item_count'], 0),
-              #                                                           NetUtils.LocationTrigger(hint['location'].player,
-              #                                                                                    hint['location'].address)))
-              #      elif hint['type'] == 'woth':
-              #          for player in range(1, multiworld.players + 1): 
-              #              custom_hints_multidata[hint['location'].player].append(
-              #                  NetUtils.TriggerableHint(NetUtils.TextHint(player,
-              #                                                              hint['text']), 
-              #                                                              NetUtils.LocationTrigger(hint['location'].player,
-              #                                                                                      hint['location'].address)))
+                for hint in custom_hints:
+                    if hint['location'].player not in custom_hints_multidata:
+                        custom_hints_multidata[hint['location'].player] = []
+                    if hint['type'] == 'area':
+                        custom_hints_multidata[hint['location'].player].append(
+                            NetUtils.TriggerableHint(NetUtils.RegionHint(hint['player'],
+                                                                         hint['area'],
+                                                                         hint['key_item_count'], 0),
+                                                                         NetUtils.LocationTrigger(hint['location'].player,
+                                                                                                  hint['location'].address)))
+                    elif hint['type'] == 'woth':
+                        for player in range(1, multiworld.players + 1): 
+                            custom_hints_multidata[hint['location'].player].append(
+                                NetUtils.TriggerableHint(NetUtils.TextHint(player,
+                                                                            hint['text']), 
+                                                                            NetUtils.LocationTrigger(hint['location'].player,
+                                                                                                    hint['location'].address)))
                 #####################################################################################################
                 # AptMarsh - END                                                                                    #
                 #####################################################################################################
+
+                fake_triggerable_hints = {}
+                fake_triggerable_hints[1] = [NetUtils.TriggerableHint(NetUtils.RegionHint(1, "Lake Hylia", 8, 3), NetUtils.FreeTrigger()),
+                                             NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint is free"), NetUtils.FreeTrigger()),
+                                             NetUtils.TriggerableHint(NetUtils.RegionHint(1, "Forest Temple", 7, 7), NetUtils.LocationTrigger(1, 16777382)),
+                                             NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint was unlocked"), NetUtils.LocationTrigger(1, 16777382)),]
+
 
                 multidata = {
                     "slot_data": slot_data,
