@@ -383,7 +383,7 @@ class TriggerableHint(typing.NamedTuple):
         TriggerableHint.ensure_team_init(ctx, team)
         released_hints = []
         for triggered_hint in TriggeredHint.get_team_data_for_type(ctx, team, hint_type).keys():
-            if player in triggered_hint.released_to(ctx, team):
+            if player in triggered_hint.get_recipients() and triggered_hint.is_released(ctx, team):
                 released_hints.append(triggered_hint.re_check(ctx, team))
         return released_hints
     
@@ -397,10 +397,37 @@ class TriggerableHint(typing.NamedTuple):
 
     def release(self, ctx, team):
         if self.hint.release(ctx, team):
-            for player in self.hint.released_to(ctx, team):
+            for player in self.hint.get_recipients():
                 ctx.on_changed_triggerable_hints(team, player, self.hint.__class__)
-            # TODO Majik: broadcast to appropriate audience
-            pass
+            
+            # Broadcast the hint to interested parties
+            # Currently hardcoded based on trigger type, since there was no obvious way to generalize.
+            # FreeTrigger does not broadcast, since that could end up being a bunch of stuff at the start of the seed.
+            if isinstance(self.trigger, LocationTrigger):
+                finding_player = self.trigger.player
+                recipients = self.hint.get_recipients()
+                hint_parts = self.hint.re_check(ctx, team).as_message_parts()
+                
+                messages = {}
+                parts = []
+                if finding_player in recipients and len(recipients) == 1:
+                    add_json_text(parts, "Found own hint: ")
+                elif len(recipients) == 1:
+                    add_json_text(parts, "Found hint for ")
+                    add_json_text(parts, recipients[0], type=JSONTypes.player_id)
+                    add_json_text(parts, ": ")
+                else:
+                    # We could expand this out to a player list. But right now we don't even have any multi-target hints.
+                    add_json_text(parts, "Found hint for multiple players: ")
+                messages[finding_player] = parts + hint_parts
+
+                for recipient in recipients:
+                    parts = []
+                    if recipient != finding_player:
+                        add_json_text(parts, finding_player, type=JSONTypes.player_id)
+                        add_json_text(parts, " found your hint: ")
+                        messages[recipient] = parts + hint_parts
+                ctx.notify_triggered_hints(team, messages)
 
 class TriggeredHint:
     @staticmethod
@@ -432,6 +459,9 @@ class TriggeredHint:
         if self.get_team_data(ctx, team)["release_state"] != "unreleased":
             self.get_team_data(ctx, team)["release_state"] = "stale"
 
+    def is_released(self, ctx, team):
+        return self.get_team_data(ctx, team)["release_state"] != "unreleased"
+
     def re_check(self, ctx, team) -> TriggeredHint:
         hint_data = self.get_team_data(ctx, team)
         if (hint_data["release_state"]) == "stale":
@@ -442,23 +472,29 @@ class TriggeredHint:
             return hint_data["release_data"]
         else:
             raise Exception("Called re_check on unreleased hint")
-
-    def released_to(self, ctx, team):
-        raise NotImplementedError("Need to decide who sees this hint")
+    
+    def get_recipients(self, team):
+        raise NotImplementedError("Need to define who the hint is for")
         
     def get_release_data(self, ctx, team) -> TriggeredHint:
         # Returns a copy to release to the clients. This allows specializing with dynamic data, holding back stuff the client hasn't earned yet, etc.
         return self
+
+    def as_message_parts(self):
+        raise NotImplementedError("Need a way to send the hint to the text log")
 
 @dataclass(frozen=True)
 class TextHint(TriggeredHint):
     player: int
     text: str
 
-    def released_to(self, ctx, team):
-        if self.get_team_data(ctx, team)["release_state"] == "unreleased":
-            return []
+    def get_recipients(self,):
         return [self.player]
+    
+    def as_message_parts(self):
+        parts = []
+        add_json_text(parts, self.text)
+        return parts
 
     def __hash__(self):
         return hash((self.text, self.player))
@@ -487,10 +523,26 @@ class LocationSetHint(TriggeredHint):
         filtered_per_location_data = {location : location_data for (location, location_data) in self.per_location_data.items() if location in ctx.location_checks[team, self.player]}
         return LocationSetHint(self.player, self.label, self.set_kind, self.total_value, filtered_per_location_data)
 
-    def released_to(self, ctx, team):
-        if self.get_team_data(ctx, team)["release_state"] == "unreleased":
-            return []
+    def get_recipients(self,):
         return [self.player]
+    
+    def as_message_parts(self):
+
+        if self.set_kind == "region_items" or self.set_kind == "region_hints":
+            found_points = 0
+            for location_data in self.per_location_data.values():
+                found_points += location_data[0]
+
+            parts = []
+            add_json_text(parts, self.label)
+            add_json_text(parts, " has ")
+            add_json_text(parts, str(self.total_value))
+            add_json_text(parts, " points of ")
+            add_json_text(parts, "items, " if self.set_kind == "region_items" else "hints, ")
+            add_json_text(parts, str(found_points))
+            add_json_text(parts, " found.")
+            return parts
+        raise Exception("Unknown LocationSetHint set_kind")
 
     def __hash__(self):
         return hash((self.player, self.label, self.set_kind, self.total_value))

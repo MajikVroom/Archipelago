@@ -743,6 +743,14 @@ class Context:
                 for client in clients:
                     async_start(self.send_msgs(client, client_hints))
 
+    def notify_triggered_hints(self, team: int, hint_messages: typing.Dict[int, typing.List[str]]):
+        for (slot, message_parts) in hint_messages.items():
+            clients = self.clients[team].get(slot)
+            for client in clients:
+                message = [{"cmd": "PrintJSON", "data": message_parts, "type": "TriggeredHint",
+                    "receiving": slot}]
+                async_start(self.send_msgs(client, message))
+
     # "events"
 
     def on_goal_achieved(self, client: Client):
