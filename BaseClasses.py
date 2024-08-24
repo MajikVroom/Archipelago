@@ -149,7 +149,7 @@ class MultiWorld():
         hint_placed_locations: List[Location]
         goal_locations: Set[Location]
         goal_display_types : Dict[str,str]
-        multidata: Dict[int,List[NetUtils.TriggerableHint]]
+        multidata: List[NetUtils.TriggerableHint]
 
 
         class CustomHint:
@@ -168,29 +168,26 @@ class MultiWorld():
                 self.hint_text = hint_text
                 self.score = 0
 
-            def place_hint(self, location: Location, players: Optional[int]) -> List[NetUtils.TriggerableHint]:
+            def place_hint(self, location: Location, players: Optional[int]) -> NetUtils.TriggerableHint:
                 self.placed_location = location
-                netutils_hints = []
                 if self.hint_type == 'text':
                     if not players:
-                        netutils_hints.append(NetUtils.TriggerableHint(NetUtils.TextHint(location.player, self.hint_text), 
-                                                NetUtils.LocationTrigger(location.player, location.address)))
+                        return NetUtils.TriggerableHint(
+                            NetUtils.TextHint(location.player, self.hint_text),
+                            NetUtils.LocationTrigger(location.player, location.address))
                     else:
                         for player in range(1, players + 1):
-                            netutils_hints.append(NetUtils.TriggerableHint(NetUtils.TextHint(player, self.hint_text), 
-                                                    NetUtils.LocationTrigger(location.player, location.address)))
+                            return NetUtils.TriggerableHint(
+                                NetUtils.TextHint(player, self.hint_text),
+                                NetUtils.LocationTrigger(location.player, location.address))
                 elif self.hint_type in ['item_value','hint_count']:
                     self.update_score()
-                    # Old
-                    netutils_hints.append(
-                            NetUtils.TriggerableHint(NetUtils.RegionHint(self.player,
-                                                                         self.area,
-                                                                         self.score, 0),
-                                                                         NetUtils.LocationTrigger(location.player,
-                                                                                                  location.address)))
-                    # TBD - Brian, will need updated NetUtils before the new call can be used
-                    #NetUtils.LocationSetHint(self.player, self.area, self.hint_type, self.score, self.location_data)
-                return netutils_hints
+                    # TODO: unify hint type values
+                    adapted_hint_type = "region_items" if self.hint_type == "item_value" else "region_hints"
+                    return NetUtils.TriggerableHint(
+                        NetUtils.LocationSetHint(self.player, self.area, adapted_hint_type, self.score,
+                                                 self.location_data),
+                        NetUtils.LocationTrigger(location.player, location.address))
 
             def load_area_data(self, player: int, area: str, relevant_locations: List[Location], item_score_map: Dict[int, Dict[int, int]]):
                 self.player = player
@@ -198,9 +195,9 @@ class MultiWorld():
                 self.location_data = {}
                 for location in [location for location in relevant_locations if location.address]:
                     if self.hint_type == 'item_value' and location.item.player and location.item.code:
-                        self.location_data[location.address] = (item_score_map[location.item.player][location.item.code], location.item.player)
+                        self.location_data[location.address] = (item_score_map[location.item.player][location.item.code], location.item.code, location.item.player)
                     elif self.hint_type == 'hint_count':
-                        self.location_data[location.address] = (1, None)
+                        self.location_data[location.address] = (1,)
                 self.update_score()
 
             def update_score(self):
@@ -222,7 +219,7 @@ class MultiWorld():
             self.hint_placed_locations = []
             self.goal_locations = set()
             self.goal_display_types = {}
-            self.multidata = {player: [] for player in range(1, parent_multiworld.players+1)}
+            self.multidata = []
 
         def setting(self, setting_name: str, new_value = None) -> Union[bool, str, int]:
             if new_value:
@@ -387,7 +384,7 @@ class MultiWorld():
                 if len(self.hint_placeable_locations) > 0:
                     location_to_place = self.hint_placeable_locations.pop()
                     self.hint_placed_locations.append(location_to_place)
-                    self.multidata[location_to_place.player].append(hint.place_hint(location_to_place,self.parent_multiworld.players))
+                    self.multidata.append(hint.place_hint(location_to_place,self.parent_multiworld.players))
             
             self.create_hint_count_hints()
 
@@ -395,7 +392,7 @@ class MultiWorld():
                 if len(self.hint_placeable_locations) > 0:
                     location_to_place = self.hint_placeable_locations.pop()
                     self.hint_placed_locations.append(location_to_place)
-                    self.multidata[location_to_place.player].append(hint.place_hint(location_to_place,self.parent_multiworld.players))
+                    self.multidata.append(hint.place_hint(location_to_place,self.parent_multiworld.players))
     #####################################################################################################
     # AptMarsh - END                                                                                    #
     #####################################################################################################
@@ -1648,7 +1645,7 @@ class Spoiler:
                         self.paths[str(multiworld.get_region('Inverted Big Bomb Shop', player))] = \
                             get_path(state, multiworld.get_region('Inverted Big Bomb Shop', player))
 
-    def to_file(self, filename: str, custom_hints_data: Dict[int,List[NetUtils.TriggerableHint]] = {}) -> None:
+    def to_file(self, filename: str, custom_hints_data: List[NetUtils.TriggerableHint] = {}) -> None:
         from itertools import chain
         from worlds import AutoWorld
         from Options import Visibility
@@ -1729,10 +1726,10 @@ class Spoiler:
             # AptMarsh - Custom hint processing and add to data package                                         #
             #####################################################################################################
             outfile.write('\n\n')
-            for player in custom_hints_data:
-                for hint in custom_hints_data[player]:
-                    outfile.write(hint[0].__str__())
-                    outfile.write('\n')
+            for hint in custom_hints_data:
+                outfile.write(hint[0].__str__())
+                outfile.write(hint[1].__str__())
+                outfile.write('\n')
                 #['Type: %s __ Trigger: %s __ Location: %s __ Hint: \n%s' % (custom_hint['type'], custom_hint['unlock_trigger'], custom_hint['location'].name, custom_hint['text']) for custom_hint in custom_hints_data]))
             #####################################################################################################
             # AptMarsh - END                                                                                    #

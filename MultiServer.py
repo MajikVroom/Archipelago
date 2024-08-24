@@ -464,12 +464,7 @@ class Context:
         for slot, hints in decoded_obj["precollected_hints"].items():
             self.hints[0, slot].update(hints)
 
-        fake_triggerable_hints = [NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint is free"), NetUtils.FreeTrigger()),
-                                  NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint is triggered"), NetUtils.LocationTrigger(1, 16777382)),
-                                  NetUtils.TriggerableHint(NetUtils.LocationSetHint(1, "Lake Hylia", "region_items", 3, {16777382 : (2, None), 12345 : (1, None)}), NetUtils.FreeTrigger())]
-        
-        # self.triggerable_hints = decoded_obj["triggerable_hints"]
-        self.triggerable_hints = fake_triggerable_hints
+        self.triggerable_hints = decoded_obj["triggerable_hints"]
         NetUtils.TriggerableHint.index_all(self)
 
         # declare slots that aren't players as done

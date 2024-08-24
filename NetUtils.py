@@ -467,9 +467,9 @@ class TextHint(TriggeredHint):
 class LocationSetHint(TriggeredHint):
     player: int
     label: str
-    set_kind: str  # Indicates semantics, as well as what "object" will be in per_location_data
+    set_kind: str  # Indicates semantics, as well as what will be in per_location_data
     total_value: int
-    per_location_data: typing.Dict[int, typing.Tuple[int, object]]  # Maps locations to a tuple containing point value and other data interesting for tracking (e.g. item ID)
+    per_location_data: typing.Dict[int, typing.Tuple[int, object]]  # Maps locations to a tuple containing point value and any other data interesting for tracking (e.g. item/player ID). Released to clients once location is checked.
     
     @staticmethod
     def update_for_location_check(ctx, team, player, location):
