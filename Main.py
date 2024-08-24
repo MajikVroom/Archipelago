@@ -291,14 +291,6 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
     logger.info(f'Beginning output...')
     outfilebase = 'AP_' + multiworld.seed_name
 
-    #####################################################################################################
-    # AptMarsh - Declaration duped outside to temporarily make var available to spoiler logger          #
-    #####################################################################################################
-    custom_hints = []
-    #####################################################################################################
-    # AptMarsh - END                                                                                    #
-    #####################################################################################################
-
     output = tempfile.TemporaryDirectory()
     with output as temp_dir:
         output_players = [player for player in multiworld.player_ids if AutoWorld.World.generate_output.__code__
@@ -375,69 +367,15 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                 #####################################################################################################
                 # AptMarsh - Custom hint processing and add to data package                                         #
                 #####################################################################################################
-                
-                # Settings placeholders
-                custom_hints_types = ['Key_Items_By_Region','WOTH']
-                custom_hints_woth_count = 6 * multiworld.players
-                
                 # Prepopulate per world region and hintable item data
                 AutoWorld.call_all(multiworld, "custom_hints_data_populate")
                 
-                # Contents - type, trigger, location, text, misc
-                #custom_hints = []
-                
-                # Holds all hintable items from all worlds
-                custom_hints_all_hintable_items = []
-                
-                # Prepare a list of filled, non-event locations that don't hold advancement items to serve as a place to put hints that will be unlocked on item collection
-                custom_hints_possible_locations = [location for location in multiworld.get_filled_locations() if not (location.advancement or location.is_event)]
-                
                 # Prepopulate playthrough without path to be able to make hints to append to data package
-                if 'WOTH' in custom_hints_types:
+                if multiworld.custom_hints.setting('Generate_WOTH'):
                     multiworld.spoiler.create_playthrough(create_paths=False)
 
-                # Iterate through all worlds
-                for game_world in multiworld.worlds.values():
-                    # Add region hint data
-                    for (area, player, location_count, key_item_count) in game_world.custom_hints_areas:
-                        # Only try to keep adding hints if their valid locations not associated with another custom hint
-                        if len(custom_hints_possible_locations) > 0:
-                            # Choose a random valid location to associate with the hint and add the hint to the list, then remove that location from the valid locations as it has been reserved for a hint already
-                            custom_hints_chosen_location = multiworld.per_slot_randoms[1].choice(custom_hints_possible_locations)
-                            custom_hints.append({'type': 'area', 'unlock_trigger': 'item_collect',
-                                                 'location': custom_hints_chosen_location, 
-                                                 'player': player,
-                                                 'text': f"(Player {player}) {area} has {key_item_count} key items out of {location_count} locations",
-                                                 'area': area, 
-                                                 'location_count': location_count,
-                                                 'key_item_count': key_item_count})
-                            custom_hints_possible_locations.remove(custom_hints_chosen_location)
-                    # Assemble all hintable items
-                    custom_hints_all_hintable_items += map(multiworld.get_name_string_for_object, game_world.custom_hints_hintable_items)
-               # logger.info(f'-------------------------------------------------------------')
-               # logger.info(custom_hints_all_hintable_items)
-               # wait = input("Press Enter to continue...")
-                # Generate Way Of The Hero (woth) style hints for valid hintable items in the calculated playthrough
-                wothCandidates = []
-                for (sphere_nr, sphere) in multiworld.spoiler.playthrough.items():
-                    if isinstance(sphere, dict):
-                        for (location, item) in sphere.items():   
-                            if item in custom_hints_all_hintable_items:
-                                wothCandidates.append(f"{item} is at {location}")
-                                #wothCandidates.append({ 'text': f"{item} is at {location}", 'player':item.player})
-                # Populate a chosen list of woth hints to be distributed into the custom hint list
-                for i in range(custom_hints_woth_count):
-                    # Only keep adding woth hints if there are still candidates left
-                    if (len(wothCandidates) > 0 and len(custom_hints_possible_locations) > 0):
-                        # Choose a random valid location to associate with the hint and add the hint to the list, then remove that location from the valid locations as it has been reserved for a hint already
-                        custom_hints_chosen_location = multiworld.per_slot_randoms[1].choice(custom_hints_possible_locations)
-                        custom_hints_chosen_woth = multiworld.per_slot_randoms[1].choice(wothCandidates)
-                        custom_hints.append({'type': 'woth', 'unlock_trigger': 'item_collect',
-                                             'location': custom_hints_chosen_location, 
-                                             'player': 1,
-                                             'text': custom_hints_chosen_woth})
-                        custom_hints_possible_locations.remove(custom_hints_chosen_location)
-                        wothCandidates.remove(custom_hints_chosen_woth)
+                # Generate, place and store all hints in the CustomHintManager object to prepare hint related multidata
+                multiworld.custom_hints.create_and_place_hints()
                 #####################################################################################################
                 # AptMarsh - END                                                                                    #
                 #####################################################################################################
@@ -461,38 +399,6 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                     if current_sphere:
                         spheres.append(dict(current_sphere))
 
-                #####################################################################################################
-                # AptMarsh - Custom hint packaging for server side                                                  #
-                #####################################################################################################
-                custom_hints_multidata = {}
-                for hint in custom_hints:
-                    if hint['location'].player not in custom_hints_multidata:
-                        custom_hints_multidata[hint['location'].player] = []
-                    if hint['type'] == 'area':
-                        custom_hints_multidata[hint['location'].player].append(
-                            NetUtils.TriggerableHint(NetUtils.RegionHint(hint['player'],
-                                                                         hint['area'],
-                                                                         hint['key_item_count'], 0),
-                                                                         NetUtils.LocationTrigger(hint['location'].player,
-                                                                                                  hint['location'].address)))
-                    elif hint['type'] == 'woth':
-                        for player in range(1, multiworld.players + 1): 
-                            custom_hints_multidata[hint['location'].player].append(
-                                NetUtils.TriggerableHint(NetUtils.TextHint(player,
-                                                                            hint['text']), 
-                                                                            NetUtils.LocationTrigger(hint['location'].player,
-                                                                                                    hint['location'].address)))
-                #####################################################################################################
-                # AptMarsh - END                                                                                    #
-                #####################################################################################################
-
-                fake_triggerable_hints = {}
-                fake_triggerable_hints[1] = [NetUtils.TriggerableHint(NetUtils.RegionHint(1, "Lake Hylia", 8, 3), NetUtils.FreeTrigger()),
-                                             NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint is free"), NetUtils.FreeTrigger()),
-                                             NetUtils.TriggerableHint(NetUtils.RegionHint(1, "Forest Temple", 7, 7), NetUtils.LocationTrigger(1, 16777382)),
-                                             NetUtils.TriggerableHint(NetUtils.TextHint(1, "This hint was unlocked"), NetUtils.LocationTrigger(1, 16777382)),]
-
-
                 multidata = {
                     "slot_data": slot_data,
                     "slot_info": slot_info,
@@ -503,7 +409,13 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                     "er_hint_data": er_hint_data,
                     "precollected_items": precollected_items,
                     "precollected_hints": precollected_hints,
-                    "triggerable_hints": custom_hints_multidata,
+                    #####################################################################################################
+                    # AptMarsh - Custom hint contribution to data package                                               #
+                    #####################################################################################################
+                    "triggerable_hints": multiworld.custom_hints.multidata,
+                    #####################################################################################################
+                    # AptMarsh - END                                                                                    #
+                    #####################################################################################################
                     "version": tuple(version_tuple),
                     "tags": ["AP"],
                     "minimum_versions": minimum_versions,
@@ -532,16 +444,20 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                     logger.info(f'Generating output files ({i}/{len(output_file_futures)}).')
                 future.result()
 
-
-        # AptMarsh - Custom hint processing may make playthrough already, check if playthrough regeneration necessary
+        ###############################################################################################################
+        # AptMarsh - Custom hint processing may make playthrough already, check if playthrough regeneration necessary #
+        ###############################################################################################################
         if args.spoiler > 1:
             logger.info('Calculating playthrough.')
             if (args.spoiler > 2 or multiworld.spoiler.playthrough == {}):
                 multiworld.spoiler.playthrough = {}
                 multiworld.spoiler.create_playthrough(create_paths=args.spoiler > 2)
+        ###############################################################################################################
+        # AptMarsh - END                                                                                              #
+        ###############################################################################################################
 
         if args.spoiler:
-            multiworld.spoiler.to_file(os.path.join(temp_dir, '%s_Spoiler.txt' % outfilebase),custom_hints)
+            multiworld.spoiler.to_file(os.path.join(temp_dir, '%s_Spoiler.txt' % outfilebase),multiworld.custom_hints.multidata)
 
         zipfilename = output_path(f"AP_{multiworld.seed_name}.zip")
         logger.info(f"Creating final archive at {zipfilename}")
