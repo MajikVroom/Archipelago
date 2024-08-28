@@ -163,8 +163,9 @@ class MultiWorld():
             score: int
             location_data: Dict[int,Tuple[int,Item]]
 
-            def __init__(self, hint_type: str, hint_text = 'Default hint text'):
+            def __init__(self, hint_type: str, player: int, hint_text = 'Default hint text'):
                 self.hint_type = hint_type
+                self.player = player
                 self.hint_text = hint_text
                 self.score = 0
 
@@ -189,8 +190,7 @@ class MultiWorld():
                                                  self.location_data),
                         NetUtils.LocationTrigger(location.player, location.address))
 
-            def load_area_data(self, player: int, area: str, relevant_locations: List[Location], item_score_map: Dict[int, Dict[int, int]]):
-                self.player = player
+            def load_area_data(self, area: str, relevant_locations: List[Location], item_score_map: Dict[int, Dict[int, int]]):
                 self.area = area
                 self.location_data = {}
                 for location in [location for location in relevant_locations if location.address]:
@@ -206,7 +206,8 @@ class MultiWorld():
                     self.score += self.location_data[location][0]
                 
         def __init__(self, parent_multiworld: MultiWorld):
-            self.settings = { 'Generate_WOTH': True, 'WOTH_per_player': 6 }
+            # TODO - Settings are currently staticly maintained. Desired controllable settings need to be connected to YAML controls.
+            self.settings = { 'Hint_Distribution': 'Owner_Random_Locations', 'Generate_WOTH': True, 'WOTH_per_player': 6 }
             self.parent_multiworld = parent_multiworld
             self.custom_hints = []
             self.region_area_map = {player: {} for player in range(1, parent_multiworld.players+1)}
@@ -243,6 +244,22 @@ class MultiWorld():
                 and location not in self.hint_placed_locations):
                 self.hint_placeable_locations.add(location)
 
+        def get_placeable_locations(self, player: int) -> Set[Location]:
+            if self.setting('Hint_Distribution') == 'All_Random_Locations':
+                return self.hint_placeable_locations.copy()
+            elif self.setting('Hint_Distribution') == 'Owner_Random_Locations':
+                return set([location for location in self.hint_placeable_locations if location.player == player])
+            else:
+                return self.hint_placeable_locations.copy()
+
+        def allocate_hint_location(self, hint: CustomHint):
+            location_pool = self.get_placeable_locations(hint.player)
+            if len(location_pool) > 0:
+                    location_to_place = location_pool.pop()
+                    self.hint_placeable_locations.remove(location_to_place)
+                    self.hint_placed_locations.append(location_to_place)
+                    self.multidata.append(hint.place_hint(location_to_place,self.parent_multiworld.players))
+
         def add_item_score(self, item: Item, score = 1):
             if item.code:
                 self.item_score_map[item.player][item.code] = score
@@ -265,15 +282,14 @@ class MultiWorld():
         def add_item_collection_spheres(self, spheres: List[Set[Location]]):
             self.item_collection_spheres = spheres
 
-        def create_text_hint(self, hint_text: str):
-            self.custom_hints.append(self.CustomHint('text', hint_text))
+        def create_text_hint(self, player, hint_text: str):
+            self.custom_hints.append(self.CustomHint('text', player, hint_text))
 
         def create_area_hints(self):
             for player in range(1, self.parent_multiworld.players + 1):
                 for area in [area for area in set(self.region_area_map[player].values()) if area not in self.areas_excluded]:
-                    new_hint = self.CustomHint('item_value')
-                    new_hint.load_area_data(player,
-                                            area,
+                    new_hint = self.CustomHint('item_value', player)
+                    new_hint.load_area_data(area,
                                             [self.location_region_map[player][loc_name][0] for loc_name in self.location_region_map[player]
                                              if self.location_region_map[player][loc_name][0].advancement
                                              and self.location_region_map[player][loc_name][1] in [region for region in self.region_area_map[player] if self.region_area_map[player][region] == area]
@@ -284,9 +300,8 @@ class MultiWorld():
         def create_hint_count_hints(self):
             for player in range(1, self.parent_multiworld.players + 1):
                 for area in [area for area in set(self.region_area_map[player].values()) if area not in self.areas_excluded]:
-                    new_hint = self.CustomHint('hint_count')
-                    new_hint.load_area_data(player,
-                                            area,
+                    new_hint = self.CustomHint('hint_count', player)
+                    new_hint.load_area_data(area,
                                             [self.location_region_map[player][loc_name][0] for loc_name in self.location_region_map[player]
                                              if self.location_region_map[player][loc_name][0] in self.hint_placed_locations
                                              and self.location_region_map[player][loc_name][1] == area],
@@ -373,26 +388,18 @@ class MultiWorld():
                 woth_candidates[player] = list(woth_candidates[player])
                 for i in range(self.settings['WOTH_per_player']):
                     if len(woth_candidates[player]) > 0:
-                        self.create_text_hint(woth_candidates[player].pop())
+                        self.create_text_hint(player, woth_candidates[player].pop())
 
         def create_and_place_hints(self):
             self.create_area_hints()
             if self.settings['Generate_WOTH']:
                 self.create_woth_hints()
-
             for hint in [hint for hint in self.custom_hints if hint.hint_type != 'hint_count']:
-                if len(self.hint_placeable_locations) > 0:
-                    location_to_place = self.hint_placeable_locations.pop()
-                    self.hint_placed_locations.append(location_to_place)
-                    self.multidata.append(hint.place_hint(location_to_place,self.parent_multiworld.players))
+                self.allocate_hint_location(hint)
             
             self.create_hint_count_hints()
-
             for hint in [hint for hint in self.custom_hints if hint.hint_type == 'hint_count']:
-                if len(self.hint_placeable_locations) > 0:
-                    location_to_place = self.hint_placeable_locations.pop()
-                    self.hint_placed_locations.append(location_to_place)
-                    self.multidata.append(hint.place_hint(location_to_place,self.parent_multiworld.players))
+                self.allocate_hint_location(hint)
     #####################################################################################################
     # AptMarsh - END                                                                                    #
     #####################################################################################################
