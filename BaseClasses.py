@@ -256,8 +256,8 @@ class MultiWorld():
             location_pool = self.get_placeable_locations(hint.player)
             if len(location_pool) > 0:
                     location_to_place = location_pool.pop()
-                    self.hint_placeable_locations.remove(location_to_place)
                     self.hint_placed_locations.append(location_to_place)
+                    self.hint_placeable_locations.remove(location_to_place)
                     self.multidata.append(hint.place_hint(location_to_place,self.parent_multiworld.players))
 
         def add_item_score(self, item: Item, score = 1):
@@ -304,7 +304,7 @@ class MultiWorld():
                     new_hint.load_area_data(area,
                                             [self.location_region_map[player][loc_name][0] for loc_name in self.location_region_map[player]
                                              if self.location_region_map[player][loc_name][0] in self.hint_placed_locations
-                                             and self.location_region_map[player][loc_name][1] == area],
+                                             and self.location_region_map[player][loc_name][1] in [region for region in self.region_area_map[player] if self.region_area_map[player][region] == area]],
                                             self.item_score_map)
                     self.custom_hints.append(new_hint)
 
