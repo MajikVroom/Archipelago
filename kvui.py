@@ -61,6 +61,7 @@ from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.animation import Animation
 from kivy.uix.popup import Popup
+from kivy.uix.splitter import Splitter
 
 fade_in_animation = Animation(opacity=0, duration=0) + Animation(opacity=1, duration=0.25)
 
@@ -439,6 +440,9 @@ class RegionHintLabel(RecycleDataViewBehavior, BoxLayout):
         self.total_text = ""
         self.found_text = ""
         self.unfound_text = ""
+        self.total_hints_text = ""
+        self.found_hints_text = ""
+        self.unfound_hints_text = ""
         for child in self.children:
             child.bind(texture_size=self.set_height)
 
@@ -452,6 +456,9 @@ class RegionHintLabel(RecycleDataViewBehavior, BoxLayout):
         self.total_text = data["total"]["text"]
         self.found_text = data["found"]["text"]
         self.unfound_text = data["unfound"]["text"]
+        self.total_hints_text = data["total_hints"]["text"]
+        self.found_hints_text = data["found_hints"]["text"]
+        self.unfound_hints_text = data["unfound_hints"]["text"]
         self.height = self.minimum_height
         return super(RegionHintLabel, self).refresh_view_attrs(rv, index, data)
 
@@ -648,13 +655,22 @@ class GameManager(App):
                 # show Archipelago tab if other logging is present
                 self.tabs.add_widget(panel)
 
-        region_panel = TabbedPanelItem(text="Regions")
-        self.log_panels["Regions"] = region_panel.content = RegionHintLog(self.json_to_kivy_parser)
-        self.tabs.add_widget(region_panel)
+        self.log_panels["Regions"] = RegionHintLog(self.json_to_kivy_parser)
+        self.log_panels["TextHints"] = TextHintLog(self.json_to_kivy_parser)
+        
+        # TODO Majik: should we incorporate the existing scouted/commanded hints into the same panel?
+        triggered_hints = TabbedPanelItem(text="Triggered hints")
+        triggered_hints.content = BoxLayout(orientation='vertical')
 
-        text_hint_panel = TabbedPanelItem(text="Text Hints")
-        self.log_panels["TextHints"] = text_hint_panel.content = TextHintLog(self.json_to_kivy_parser)
-        self.tabs.add_widget(text_hint_panel)
+        self.log_panels["Regions"] = RegionHintLog(self.json_to_kivy_parser)
+        triggered_hints.content.add_widget(self.log_panels["Regions"])
+
+        self.log_panels["TextHints"] = TextHintLog(self.json_to_kivy_parser)
+        splitter = Splitter(sizable_from = 'top')
+        splitter.add_widget(self.log_panels["TextHints"])
+        triggered_hints.content.add_widget(splitter)
+        
+        self.tabs.add_widget(triggered_hints)
 
         hint_panel = TabbedPanelItem(text="Hints")
         self.log_panels["Hints"] = hint_panel.content = HintLog(self.json_to_kivy_parser)
@@ -924,9 +940,12 @@ class TextHintLog(RecycleView):
 class RegionHintLog(RecycleView):
     header = {
         "region": {"text": "[u]Region[/u]"},
-        "total": {"text": "[u]Total[/u]"},
-        "found": {"text": "[u]Found[/u]"},
-        "unfound": {"text": "[u]Unfound[/u]"},
+        "total": {"text": "[u]Total items[/u]"},
+        "found": {"text": "[u]Found items[/u]"},
+        "unfound": {"text": "[u]Unfound items[/u]"},
+        "total_hints": {"text": "[u]Total hints[/u]"},
+        "found_hints": {"text": "[u]Found hints[/u]"},
+        "unfound_hints": {"text": "[u]Unfound hints[/u]"},
     }
     
     sort_key: str = ""
@@ -938,25 +957,37 @@ class RegionHintLog(RecycleView):
         self.parser = parser
     
     def refresh_hints(self, location_set_hints):
-        data = []
+        data_by_region = {}
         for location_set_hint in location_set_hints:
-            if location_set_hint["set_kind"] == "region_items":
+            if location_set_hint["set_kind"] == "region_items" or location_set_hint["set_kind"] == "region_hints":
+                if not location_set_hint["label"] in data_by_region:
+                    # Everything but the region name defaults to ?
+                    data_by_region[location_set_hint["label"]] = {
+                        "region": {"text": self.parser.handle_node({"type": "text", "text": location_set_hint["label"]})},
+                        "total": {"text": self.parser.handle_node({"type": "text", "text": "?"})},
+                        "found": {"text": self.parser.handle_node({"type": "text", "text": "?"})},
+                        "unfound": {"text": self.parser.handle_node({"type": "text", "text": "?"})},
+                        "total_hints": {"text": self.parser.handle_node({"type": "text", "text": "?"})},
+                        "found_hints": {"text": self.parser.handle_node({"type": "text", "text": "?"})},
+                        "unfound_hints": {"text": self.parser.handle_node({"type": "text", "text": "?"})}}
+                    
+                region_data = data_by_region[location_set_hint["label"]]
                 found_value = 0
                 for (location, location_data) in location_set_hint["per_location_data"].items():
                     found_value += location_data[0]
-                data.append({
-                    "region": {"text": self.parser.handle_node({"type": "text", "text": location_set_hint["label"]})},
-                    "total": {"text": self.parser.handle_node({"type": "text", "text": str(location_set_hint["total_value"])})},
-                    "found": {"text": self.parser.handle_node({"type": "text", "text": str(found_value)})},
-                    "unfound": {"text": self.parser.handle_node({"type": "color", "text": str(location_set_hint["total_value"] - found_value),
-                                                                "color": "green" if location_set_hint["total_value"] - found_value == 0 else "red" if found_value == 0 else "blue"})},
-                })
-            elif location_set_hint["set_kind"] == "region_hints":
-                # TODO Majik: hint hinting
-                pass
 
-
-        data.sort(key=self.hint_sorter, reverse=self.reversed)
+                if location_set_hint["set_kind"] == "region_items":
+                    region_data["total"] = {"text": self.parser.handle_node({"type": "text", "text": str(location_set_hint["total_value"])})}
+                    region_data["found"] = {"text": self.parser.handle_node({"type": "text", "text": str(found_value)})}
+                    region_data["unfound"] = {"text": self.parser.handle_node({"type": "color", "text": str(location_set_hint["total_value"] - found_value),
+                                                                               "color": "green" if location_set_hint["total_value"] - found_value == 0 else "red" if found_value == 0 else "blue"})}
+                elif location_set_hint["set_kind"] == "region_hints":
+                    region_data["total_hints"] = {"text": self.parser.handle_node({"type": "text", "text": str(location_set_hint["total_value"])})}
+                    region_data["found_hints"] = {"text": self.parser.handle_node({"type": "text", "text": str(found_value)})}
+                    region_data["unfound_hints"] = {"text": self.parser.handle_node({"type": "color", "text": str(location_set_hint["total_value"] - found_value),
+                                                                               "color": "green" if location_set_hint["total_value"] - found_value == 0 else "red" if found_value == 0 else "blue"})}
+        data = list(data_by_region.values())
+        # data.sort(key=self.hint_sorter, reverse=self.reversed)
         data.insert(0, self.header)
         self.data = data
 

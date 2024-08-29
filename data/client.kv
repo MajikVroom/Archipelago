@@ -134,6 +134,7 @@
         pos_hint: {"center_y": 0.5}
 <TextHintLog>:
     cols: 1
+    size_hint_y: 0.2
     viewclass: 'TextHintLabel'
     scroll_y: self.height
     scroll_type: ["content", "bars"]
@@ -155,9 +156,12 @@
             pos: self.pos
     height: self.minimum_height
     region_text: "Region"
-    total_text: "Total"
-    found_text: "Found"
-    unfound_text: "Unfound"
+    total_text: "Total items"
+    found_text: "Found items"
+    unfound_text: "Unfound items"
+    total_hints_text: "Total hints"
+    found_hints_text: "Found hints"
+    unfound_hints_text: "Unfound hints"
     TooltipLabel:
         id: region
         sort_key: 'region'
@@ -186,8 +190,30 @@
         halign: 'center'
         valign: 'center'
         pos_hint: {"center_y": 0.5}
+    TooltipLabel:
+        id: total_hints
+        sort_key: 'total_hints'
+        text: root.total_hints_text
+        halign: 'center'
+        valign: 'center'
+        pos_hint: {"center_y": 0.5}
+    TooltipLabel:
+        id: found_hints
+        sort_key: 'found_hints'
+        text: root.found_hints_text
+        halign: 'center'
+        valign: 'center'
+        pos_hint: {"center_y": 0.5}
+    TooltipLabel:
+        id: unfound_hints
+        sort_key: 'unfound_hints'
+        text: root.unfound_hints_text
+        halign: 'center'
+        valign: 'center'
+        pos_hint: {"center_y": 0.5}
 <RegionHintLog>:
     cols: 1
+    size_hint_y: 1
     viewclass: 'RegionHintLabel'
     scroll_y: self.height
     scroll_type: ["content", "bars"]
