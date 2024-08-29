@@ -284,6 +284,13 @@ class DOOM2World(World):
         controls['goal_items'].extend([location.item.name for location in self.multiworld.get_locations()
                                            if location.item.player == self.player and len(location.item.name.split(' - Complete')) > 1])
 
+        self.multiworld.custom_hints.area_order[self.player] = [
+            'Entryway', 'Underhalls', 'The Gantlet', 'The Focus', 'The Waste Tunnels', 'The Crusher', 'Dead Simple', 'Tricks and Traps', 'The Pit', 'Refueling Base', 'Circle of Death',
+            'The Factory', 'Downtown', 'The Inmost Dens', 'Industrial Zone', 'Suburbs', 'Tenements', 'The Courtyard', 'The Citadel', 'Gotcha!',
+            'Nirvana', 'The Catacombs', 'Barrels o Fun', 'The Chasm', 'Bloodfalls', 'The Abandoned Mines', 'Monster Condo', 'The Spirit World', 'The Living End', 'Icon of Sin',
+            'Wolfenstein2', 'Grosse2'
+        ]
+
         super().custom_hints_data_populate(populate_region_area_map = True, populate_location_region_map = True, populate_item_score_map = True, region_area_map_condensers = region_area_map_condensers, controls = controls)
     #####################################################################################################
     # AptMarsh - END                                                                                    #

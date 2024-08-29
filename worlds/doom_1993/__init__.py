@@ -300,6 +300,13 @@ class DOOM1993World(World):
         controls['goal_items'].extend([location.item.name for location in self.multiworld.get_locations()
                                            if location.item.player == self.player and len(location.item.name.split(' - Complete')) > 1])
 
+        self.multiworld.custom_hints.area_order[self.player] = [
+            'Hangar', 'Nuclear Plant', 'Toxin Refinery', 'Command Control', 'Phobos Lab', 'Central Processing', 'Computer Station', 'Phobos Anomaly', 'Military Base',
+            'Deimos Anomaly', 'Containment Area', 'Refinery', 'Deimos Lab', 'Command Center', 'Halls of the Damned', 'Spawning Vats', 'Tower of Babel', 'Fortress of Mystery',
+            'Hell Keep', 'Slough of Despair', 'Pandemonium', 'House of Pain', 'Unholy Cathedral', 'Mt. Erebus', 'Limbo', 'Dis', 'Warrens',
+            'Hell Beneath', 'Perfect Hatred', 'Sever the Wicked', 'Unruly Evil', 'They Will Repent', 'Against Thee Wickedly', 'And Hell Followed', 'Unto the Cruel', 'Fear'
+        ]
+
         super().custom_hints_data_populate(populate_region_area_map = True, populate_location_region_map = True, populate_item_score_map = True, region_area_map_condensers = region_area_map_condensers, controls = controls)
     #####################################################################################################
     # AptMarsh - END                                                                                    #

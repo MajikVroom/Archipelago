@@ -1492,6 +1492,15 @@ class OOTWorld(World):
             else:
                 area = region
             
+            self.multiworld.custom_hints.area_order[self.player] = [
+                'Kokiri Forest', 'Lost Woods', 'Sacred Forest Meadow', 'Deku Tree', 'Forest Temple',
+                'DMT', 'Goron City', 'DMC', 'Dodongos Cavern', 'Fire Temple',
+                'Lake Hylia', 'Water Temple', 'Zoras River', 'Zoras Domain', 'Zoras Fountain', 'Jabu', 'Ice Cavern',
+                'Kakariko', 'BOTW', 'Graveyard', 'Shadow Temple',
+                'Gerudo Valley', 'Gerudo Fortress', 'Wasteland', 'Desert Colossus', 'Spirit Temple', 'GTG',
+                'Hyrule Field', 'Lon Lon Ranch', 'Market', 'Temple of Time', 'Hyrule Castle', 'Outside Ganons Castle', 'Ganons Castle'
+            ]
+
             self.multiworld.custom_hints.add_region(self.player, region, area)
 
         super().custom_hints_data_populate(populate_region_area_map = False, populate_location_region_map = True, populate_item_score_map = True, region_area_map_condensers = region_area_map_condensers, controls = controls)

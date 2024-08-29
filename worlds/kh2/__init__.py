@@ -612,6 +612,15 @@ class KH2World(World):
             
             self.multiworld.custom_hints.add_region(self.player, region, area)
 
+        self.multiworld.custom_hints.area_order[self.player] = [
+            'Garden Of Assemblage', "Sora's Heart", 'Drive Forms', 'Prison', 'Twilight Town', 'Hollow Bastion', 'Hollow Bastion 2', 'Land of Dragons', 'Land of Dragons 2',
+            "Beast's Castle", "Beast's Castle 2", 'Olympus Coliseum', 'Olympus Coliseum 2', 'Disney Castle', 'Timeless River', 'Port Royal', 'Port Royal 2',
+            'Agrabah', 'Agrabah 2', 'Holloween Town', 'Holloween Town 2', 'Pride Lands', 'Pride Lands 2', 'Space Paranoids', 'Space Paranoids 2',
+            'The World That Never Was', 'The World That Never Was 2', '100 Acre Wood', 'Cavern of Rememberance', 'Atlantica', 'Underdome Cups',
+            'Sephiroth', 'Data Roxas', 'Data Larxene', 'Data Marluxia', 'Data Luxord', 'Data Demyx', 'Data Axel', 'Data Saix',
+            'Data Zexion', 'Data Lexaeus', 'Data Vexen', 'Data Xaldin', 'Data Xigbar', 'Data Xemnas'
+        ]
+
         super().custom_hints_data_populate(populate_region_area_map = False, populate_location_region_map = True, populate_item_score_map = True, region_area_map_condensers = region_area_map_condensers, controls = controls)
     #####################################################################################################
     # AptMarsh - END                                                                                    #

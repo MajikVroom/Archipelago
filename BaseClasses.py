@@ -139,6 +139,7 @@ class MultiWorld():
         random: random.Random
         custom_hints: List[CustomHint]
         region_area_map: Dict[int, Dict[str, str]]
+        area_order: Dict[int, List[str]]
         areas_excluded: Set[str]
         location_region_map: Dict[int, Dict[str,Tuple[Location, str]]]
         item_score_map: Dict[int, Dict[int, int]]
@@ -169,26 +170,31 @@ class MultiWorld():
                 self.hint_text = hint_text
                 self.score = 0
 
-            def place_hint(self, location: Location, players: Optional[int]) -> NetUtils.TriggerableHint:
+            def place_hint(self, location: Optional[Location], players: Optional[int]) -> NetUtils.TriggerableHint:
+                if location:
+                    hint_trigger = NetUtils.LocationTrigger(location.player, location.address)
+                else:
+                    hint_trigger = NetUtils.FreeTrigger()
+
                 self.placed_location = location
                 if self.hint_type == 'text':
                     if not players:
                         return NetUtils.TriggerableHint(
                             NetUtils.TextHint(location.player, self.hint_text),
-                            NetUtils.LocationTrigger(location.player, location.address))
+                            hint_trigger)
                     else:
                         for player in range(1, players + 1):
                             return NetUtils.TriggerableHint(
                                 NetUtils.TextHint(player, self.hint_text),
-                                NetUtils.LocationTrigger(location.player, location.address))
+                                hint_trigger)
                 elif self.hint_type in ['item_value','hint_count']:
                     self.update_score()
                     # TODO: unify hint type values
                     adapted_hint_type = "region_items" if self.hint_type == "item_value" else "region_hints"
                     return NetUtils.TriggerableHint(
                         NetUtils.LocationSetHint(self.player, self.area, adapted_hint_type, self.score,
-                                                 self.location_data),
-                        NetUtils.LocationTrigger(location.player, location.address))
+                                                self.location_data),
+                        hint_trigger)
 
             def load_area_data(self, area: str, relevant_locations: List[Location], item_score_map: Dict[int, Dict[int, int]]):
                 self.area = area
@@ -207,10 +213,11 @@ class MultiWorld():
                 
         def __init__(self, parent_multiworld: MultiWorld):
             # TODO - Settings are currently staticly maintained. Desired controllable settings need to be connected to YAML controls.
-            self.settings = { 'Hint_Distribution': 'Owner_Random_Locations', 'Generate_WOTH': True, 'WOTH_per_player': 6 }
+            self.settings = { 'Hint_Distribution': 'Owner_Random_Locations', 'PreRelease_Hints': ['hint_count'], 'Generate_WOTH': True, 'WOTH_per_player': 6 }
             self.parent_multiworld = parent_multiworld
             self.custom_hints = []
             self.region_area_map = {player: {} for player in range(1, parent_multiworld.players+1)}
+            self.area_order = {player: [] for player in range(1, parent_multiworld.players+1)}
             self.areas_excluded = set()
             self.location_region_map = {player: {} for player in range(1, parent_multiworld.players+1)}
             self.item_score_map = {player: {} for player in range(1, parent_multiworld.players+1)}
@@ -229,7 +236,7 @@ class MultiWorld():
 
         def add_region(self, player: int, region: str, area: str):
             self.region_area_map[player][region] = area
-        
+
         def exclude_areas(self, areas: List[str]):
             self.areas_excluded.update(areas)
 
@@ -253,12 +260,15 @@ class MultiWorld():
                 return self.hint_placeable_locations.copy()
 
         def allocate_hint_location(self, hint: CustomHint):
-            location_pool = self.get_placeable_locations(hint.player)
-            if len(location_pool) > 0:
-                    location_to_place = location_pool.pop()
-                    self.hint_placed_locations.append(location_to_place)
-                    self.hint_placeable_locations.remove(location_to_place)
-                    self.multidata.append(hint.place_hint(location_to_place,self.parent_multiworld.players))
+            if hint.hint_type in self.setting('PreRelease_Hints'):
+                self.multidata.append(hint.place_hint(None, self.parent_multiworld.players))
+            else:
+                location_pool = self.get_placeable_locations(hint.player)
+                if len(location_pool) > 0:
+                        location_to_place = location_pool.pop()
+                        self.hint_placed_locations.append(location_to_place)
+                        self.hint_placeable_locations.remove(location_to_place)
+                        self.multidata.append(hint.place_hint(location_to_place,self.parent_multiworld.players))
 
         def add_item_score(self, item: Item, score = 1):
             if item.code:
@@ -363,7 +373,7 @@ class MultiWorld():
             # Filter the requirement map down to goal locations
             goals_requirement_map = []
             for location_name in requirement_map:
-                if location_store[location_name] in self.goal_locations:
+                if len([loc for loc in self.goal_locations if loc.player == location_store[location_name].player]) == 0 or location_store[location_name] in self.goal_locations:
                     for requirement in requirement_map[location_name]:
                         goals_requirement_map.append((location_store[location_name], requirement))
             # Make the final list of WOTH hint candidates a unique set of requirement region to goal name
@@ -381,15 +391,37 @@ class MultiWorld():
                 else:
                     woth_text += self.parent_multiworld.get_name_string_for_object(goal.item)
 
-                woth_candidates[requirement.player].add(woth_text)
+                woth_candidates[requirement.player].add((requirement, woth_text))
 
             # Choose and load a list of WOTH hints into the hint pool
             for player in woth_candidates:
-                woth_candidates[player] = list(woth_candidates[player])
+                #woth_candidates[player] = list(woth_candidates[player])
                 for i in range(self.settings['WOTH_per_player']):
                     if len(woth_candidates[player]) > 0:
-                        self.create_text_hint(player, woth_candidates[player].pop())
+                        woth_candidate = woth_candidates[player].pop()
+                        self.create_text_hint(player, woth_candidate[1])
+                        woth_candidates[player] = set([woth for woth in list(woth_candidates[player]) if woth[0] != woth_candidate[0]])
 
+        def compare_multidata(self, hint1: NetUtils.TriggerableHint, hint2: NetUtils.TriggerableHint):
+            if type(hint1.hint) != type(hint2.hint):
+                return -1 if type(hint1.hint) is NetUtils.LocationSetHint else 1
+            elif hint1.hint.player != hint2.hint.player:
+                return hint1.hint.player - hint2.hint.player
+            elif type(hint1.hint) is NetUtils.LocationSetHint:
+                if hint1.hint.label == hint2.hint.label:
+                        if hint1.hint.set_kind != hint2.hint.set_kind:
+                            return -1 if hint1.hint.set_kind == 'region_items' else 1
+                        else:
+                            return 0
+                else:
+                    if hint1.hint.label not in self.area_order[hint1.hint.player]:
+                        self.area_order[hint1.hint.player].append(hint1.hint.label)
+                    if hint2.hint.label not in self.area_order[hint2.hint.player]:
+                        self.area_order[hint2.hint.player].append(hint2.hint.label)
+                    return self.area_order[hint1.hint.player].index(hint1.hint.label) - self.area_order[hint2.hint.player].index(hint2.hint.label)
+            else:
+                return 0
+        
         def create_and_place_hints(self):
             self.create_area_hints()
             if self.settings['Generate_WOTH']:
@@ -400,6 +432,12 @@ class MultiWorld():
             self.create_hint_count_hints()
             for hint in [hint for hint in self.custom_hints if hint.hint_type == 'hint_count']:
                 self.allocate_hint_location(hint)
+
+            for player in self.area_order:
+                for area in sorted(list(set([area for area in [trigger_hint[0].label for trigger_hint in self.multidata if type(trigger_hint[0]) is NetUtils.LocationSetHint and trigger_hint[0].player == player] if area not in self.area_order[player]]))):
+                    self.area_order[player].append(area)
+
+            self.multidata = sorted(self.multidata, key=functools.cmp_to_key(self.compare_multidata))
     #####################################################################################################
     # AptMarsh - END                                                                                    #
     #####################################################################################################
@@ -1737,6 +1775,10 @@ class Spoiler:
                 outfile.write(hint[0].__str__())
                 outfile.write(hint[1].__str__())
                 outfile.write('\n')
+                if type(hint[0]) is NetUtils.LocationSetHint:
+                    for item in [loc.item.name for loc in self.multiworld.get_locations() if loc.item.code in [item[0] for item in hint[0].per_location_data.values()]]:
+                        outfile.write(', ' + item)
+                    outfile.write('\n')
                 #['Type: %s __ Trigger: %s __ Location: %s __ Hint: \n%s' % (custom_hint['type'], custom_hint['unlock_trigger'], custom_hint['location'].name, custom_hint['text']) for custom_hint in custom_hints_data]))
             #####################################################################################################
             # AptMarsh - END                                                                                    #

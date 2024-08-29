@@ -622,8 +622,12 @@ class HKWorld(World):
         for region in set([location_to_region_lookup[location.name] for location in self.multiworld.get_locations(player=self.player) if location.item.code]):
             if region.startswith('Ruins1') or region.startswith('Ruins2'):
                 area = 'Ruins'
+            elif region.startswith('Deepnest_East'):
+                area = 'Kingdoms Edge'
             elif region.startswith('Fungus1') or region.startswith('Fungus2') or region.startswith('Fungus3'):
                 area = 'Fungus'
+            elif region == 'Room_Wyrm':
+                area = 'Kingdoms Edge'
             elif region.startswith('Room'):
                 area = 'Shops'
             else:
