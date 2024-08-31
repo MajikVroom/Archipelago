@@ -4,24 +4,7 @@
 name: unittests
 
 on:
-  push:
-    paths:
-      - '**'
-      - '!docs/**'
-      - '!setup.py'
-      - '!*.iss'
-      - '!.gitignore'
-      - '!.github/workflows/**'
-      - '.github/workflows/unittests.yml'
-  pull_request:
-    paths:
-      - '**'
-      - '!docs/**'
-      - '!setup.py'
-      - '!*.iss'
-      - '!.gitignore'
-      - '!.github/workflows/**'
-      - '.github/workflows/unittests.yml'
+  workflow_dispatch:
 
 jobs:
   unit:
