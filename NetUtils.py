@@ -377,6 +377,7 @@ class TriggerableHint(typing.NamedTuple):
             # No triggers currently create per-team data.
 
         FreeTrigger.release_all(ctx, team)
+        TriggerableHint.broadcast_updates(ctx, team)
 
     @staticmethod
     def get_released_hints_for_type(ctx, team, player, hint_type) -> typing.List[TriggeredHint]:
@@ -388,18 +389,20 @@ class TriggerableHint(typing.NamedTuple):
         return released_hints
     
     @staticmethod
-    def need_update_for_type(ctx, team, player, hint_type) -> bool:
+    def broadcast_updates(ctx, team):
         TriggerableHint.ensure_team_init(ctx, team)
-        for triggered_hint in TriggeredHint.get_team_data_for_type(ctx, team, hint_type).keys():
-            if triggered_hint.needs_update(ctx, team):
-                return True
-        return False
+        needed_updates = set()
+        for (hint_type, data_for_type) in ctx.triggerable_hint_state["team_data"][team].items():
+            for triggered_hint in data_for_type.keys():
+                if triggered_hint.check_and_set_broadcasted(ctx, team):
+                    for player in triggered_hint.get_recipients():
+                        needed_updates.add((player, hint_type))
+        
+        for (player, hint_type) in needed_updates:
+            ctx.on_changed_triggerable_hints(team, player, hint_type)
 
     def release(self, ctx, team):
         if self.hint.release(ctx, team):
-            for player in self.hint.get_recipients():
-                ctx.on_changed_triggerable_hints(team, player, self.hint.__class__)
-            
             # Broadcast the hint to interested parties
             # Currently hardcoded based on trigger type, since there was no obvious way to generalize.
             # FreeTrigger does not broadcast, since that could end up being a bunch of stuff at the start of the seed.
@@ -448,12 +451,17 @@ class TriggeredHint:
     def release(self, ctx, team) -> bool:
         if self.get_team_data(ctx, team)["release_state"] == "unreleased":
             self.get_team_data(ctx, team)["release_state"] = "stale"
-            self.re_check(ctx, team)
             return True
         return False
     
-    def needs_update(self, ctx, team) -> bool:
-        return self.get_team_data(ctx, team)["release_state"] == "stale"
+    def check_and_set_broadcasted(self, ctx, team) -> bool:
+        if self.get_team_data(ctx, team)["release_state"] == "stale":
+            self.re_check(ctx, team)
+        if self.get_team_data(ctx, team)["release_state"] == "fresh":
+            self.get_team_data(ctx, team)["release_state"] = "broadcasted"
+            return True
+        return False
+        
 
     def mark_stale(self, ctx, team):
         if self.get_team_data(ctx, team)["release_state"] != "unreleased":
@@ -464,14 +472,16 @@ class TriggeredHint:
 
     def re_check(self, ctx, team) -> TriggeredHint:
         hint_data = self.get_team_data(ctx, team)
-        if (hint_data["release_state"]) == "stale":
+
+        if hint_data["release_state"] == "unreleased":
+            raise Exception("Called re_check on unreleased hint")
+        
+        if hint_data["release_state"] == "stale":
             hint_data["release_data"] = self.get_release_data(ctx, team)
             hint_data["release_state"] = "fresh"
         
-        if (hint_data["release_state"]) == "fresh":
-            return hint_data["release_data"]
-        else:
-            raise Exception("Called re_check on unreleased hint")
+        # release_state should be fresh or broadcasted here
+        return hint_data["release_data"]
     
     def get_recipients(self, team):
         raise NotImplementedError("Need to define who the hint is for")

@@ -1072,9 +1072,7 @@ def register_location_checks(ctx: Context, team: int, slot: int, locations: typi
         if old_hints != ctx.hints[team, slot]:
             ctx.on_changed_hints(team, slot)
         
-        if NetUtils.TriggerableHint.need_update_for_type(ctx, team, slot, NetUtils.LocationSetHint):
-            ctx.on_changed_triggerable_hints(team, slot, NetUtils.LocationSetHint)
-
+        NetUtils.TriggerableHint.broadcast_updates(ctx, team)
         ctx.save()
 
 
