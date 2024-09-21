@@ -385,12 +385,7 @@ class MultiWorld():
                 if self.parent_multiworld.players > 1:
                     woth_text += ' (' + self.parent_multiworld.get_player_name(requirement.player) + ')'
                 woth_text += ' is on the path of '
-
-                if self.parent_multiworld.get_name_string_for_object(goal) in self.goal_display_types:
-                    display_type = self.goal_display_types[self.parent_multiworld.get_name_string_for_object(goal)]
-                else:
-                    display_type = 'Location'
-
+                display_type = self.goal_display_types[self.parent_multiworld.get_name_string_for_object(goal)]
                 if display_type == 'Location':
                     woth_text += self.parent_multiworld.get_name_string_for_object(goal)
                 else:
