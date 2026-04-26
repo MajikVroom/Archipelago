@@ -265,6 +265,12 @@ class LinkTunicColor(OptionList):
     display_name = "Link Tunic Color"
     default = [30, 105, 27]
 
+class DisabledDungeons():
+    """Set the number of dungeons which do not need to be entered to complete the seed."""
+    display_name = "Disabled dungeons"
+    range_start = 0
+    range_end = 4
+    default = 0
 
 @dataclass
 class MMROptions(PerGameCommonOptions):
@@ -272,6 +278,7 @@ class MMROptions(PerGameCommonOptions):
     logic_difficulty: LogicDifficulty
     majora_remains_required: MajoraRemainsRequired
     moon_remains_required: MoonRemainsRequired
+    disabled_dungeons: DisabledDungeons
     camc: CAMC
     swordless: Swordless
     shieldless: Shieldless

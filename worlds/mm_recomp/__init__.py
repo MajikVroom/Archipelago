@@ -66,6 +66,11 @@ class MMRWorld(World):
                 self.prices += str(price) + " "
 
             self.prices = self.prices[:-1]
+        
+        self.options.selected_disabled_dungeons = []
+        if self.options.disabled_dungeons.value != 0:
+            disableable_dungeons = "Woodfall Temple", "Snowhead Temple", "Great Bay Temple", "Stone Tower Temple"
+            self.options.selected_disabled_dungeons = self.random.sample(disableable_dungeons, self.options.disabled_dungeons.value)
     
     def create_item(self, name: str) -> MMRItem:
         return MMRItem(name, item_data_table[name].type, item_data_table[name].code, self.player)
@@ -145,6 +150,10 @@ class MMRWorld(World):
         else:
             for i in range(0, 12 - shp):
                 mw.itempool.append(self.create_item("Heart Piece"))
+        
+        for dungeon in self.options.selected_disabled_dungeons:
+            reward_map = {"Woodfall Temple" : "Odolwa's Remains", "Snowhead Temple" : "Goht's Remains", "Great Bay Temple" : "Gyorg's Remains", "Stone Tower Temple" : "Twinmold's Remains"}
+            mw.push_precollected(self.create_item(reward_map[dungeon]))
 
     def create_regions(self) -> None:
         player = self.player
