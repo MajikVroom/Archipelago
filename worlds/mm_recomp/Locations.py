@@ -733,7 +733,8 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Swamp Spider House Reward": MMRLocationData(
         region="Swamp Spider House",
-        address=0x346942000008A
+        address=0x346942000008A,
+        can_create=lambda options: options.skullsanity.value != 2
     ),
     "Southern Swamp Grotto Chest": MMRLocationData(
         region="Southern Swamp (Deku Palace)",
@@ -1531,11 +1532,13 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Ocean Spider House Coloured Mask Sequence HP": MMRLocationData(
         region="Ocean Spider House",
-        address=0x3469420062800
+        address=0x3469420062800,
+        can_create=lambda options: options.skullsanity.value != 2
     ),
     "Ocean Spider House Reward": MMRLocationData(
         region="Ocean Spider House",
-        address=0x3469420000009
+        address=0x3469420000009,
+        can_create=lambda options: options.skullsanity.value != 2
     ),
     "Great Bay Temple Blender Pot SF": MMRLocationData(
         region="Great Bay Temple",
