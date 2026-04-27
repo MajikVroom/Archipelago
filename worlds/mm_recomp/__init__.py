@@ -71,7 +71,11 @@ class MMRWorld(World):
         if self.options.disabled_dungeons.value != 0:
             disableable_dungeons = "Woodfall Temple", "Snowhead Temple", "Great Bay Temple", "Stone Tower Temple"
             self.options.selected_disabled_dungeons = self.random.sample(disableable_dungeons, self.options.disabled_dungeons.value)
-    
+
+        self.placed_songs = 0
+        if self.options.song_shuffle.value == 0:
+            raise RuntimeError("TODO: vanilla songs")
+
     def create_item(self, name: str) -> MMRItem:
         return MMRItem(name, item_data_table[name].type, item_data_table[name].code, self.player)
 
@@ -97,6 +101,7 @@ class MMRWorld(World):
 
         mw.push_precollected(self.create_item("Ocarina of Time"))
         mw.push_precollected(self.create_item("Song of Time"))
+        self.placed_songs += 1
 
         if self.options.swordless.value:
             mw.itempool.append(self.create_item("Progressive Sword"))
@@ -106,6 +111,7 @@ class MMRWorld(World):
             
         if self.options.start_with_soaring.value:
             mw.push_precollected(self.create_item("Song of Soaring"))
+            self.placed_songs += 1
         
         if self.options.shuffle_spiderhouse_reward.value:
             mw.itempool.append(self.create_item("Progressive Wallet"))
@@ -320,7 +326,7 @@ class MMRWorld(World):
                 self.place("Stone Tower Temple Inverted Eastern Air Gust Room Fire Chest", "Stray Fairy (Stone Tower)")
                 self.place("Stone Tower Temple Entrance Room Lower Chest", "Stray Fairy (Stone Tower)")
                 self.place("Stone Tower Temple After Garo Upside Down Chest", "Stray Fairy (Stone Tower)")
-            
+
         sword_location = mw.get_location("Link's Inventory (Kokiri Sword)", player)
         if self.options.swordless.value:
             sword_location.item_rule = lambda item: item.name != "Progressive Sword"
@@ -352,6 +358,31 @@ class MMRWorld(World):
 
             for i in range(shp - 4, 8):
                 mw.get_location(code_to_location_table[0x34694200D0000 | i], player).item_rule = lambda item: item.name != "Heart Piece" and item.name != "Heart Container"
+
+        if self.options.song_shuffle.value == 2:
+            song_location_names = ["Top of Clock Tower (Song of Time)", "Clock Tower Happy Mask Salesman #1", "Romani Ranch Romani Game", "Southern Swamp Song Tablet", "Graveyard Day 1 Iron Knuckle Song",
+                                "Deku Palace Monkey Song", "Twin Islands Goron Elder Request", "Great Bay Baby Zora Song", "Ikana Castle King Song", "Oath to Order"]
+            song_names = ["Song of Time", "Song of Healing", "Epona's Song", "Song of Soaring", "Song of Storms", "Sonata of Awakening", "Goron Lullaby", "New Wave Bossa Nova", "Elegy of Emptiness", "Oath to Order"]
+            total_song_count = len(song_names)
+
+            # REVIEW: I'm tracking placed_songs based on the item_rule returning true. If it's possible for the song to not actually end up there, this is inaccurate.
+
+            def song_only_item_rule(item):
+                if self.placed_songs >= total_song_count:
+                    return True
+                if item.name in song_names:
+                    self.placed_songs += 1
+                    return True
+                return False
+            
+            def no_songs_item_rule(item):
+                return item.name not in song_names
+
+            for location in mw.get_unfilled_locations(self.player):
+                if location.name in song_location_names:
+                    location.item_rule = song_only_item_rule
+                else:
+                    location.item_rule = no_songs_item_rule
 
         # TODO: check options to see what player starts with
         # ~ mw.get_location("Top of Clock Tower (Ocarina of Time)", player).place_locked_item(self.create_item(self.get_filler_item_name()))

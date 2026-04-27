@@ -47,6 +47,18 @@ class Shieldless(Toggle):
     """Start the game without a shield, and shuffle an extra Progressive Shield into the pool."""
     display_name = "Shieldless"
 
+class SongShuffle(Choice):
+    """Choose how songs are shuffled.
+    
+    vanilla: songs are placed in their vanilla locations.
+    anywhere: Anything can be on a song, and songs can be anywhere.
+    songs: Songs are shuffled amongst themselves."""
+    display_name = "Shuffle Songs"
+    option_vanilla = 0
+    option_anywhere = 1
+    option_songs = 2
+    default = 1
+
 
 class StartWithSoaring(DefaultOnToggle):
     """Start the game with Song of Soaring."""
@@ -282,6 +294,7 @@ class MMROptions(PerGameCommonOptions):
     camc: CAMC
     swordless: Swordless
     shieldless: Shieldless
+    song_shuffle: SongShuffle
     start_with_soaring: StartWithSoaring
     starting_hearts: StartingHeartQuarters
     starting_hearts_are_containers_or_pieces: StartingHeartsAreContainersOrPieces
