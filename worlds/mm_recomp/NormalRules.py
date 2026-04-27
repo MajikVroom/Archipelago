@@ -1172,8 +1172,8 @@ def get_location_rules(player, options, prices):
         "Goron Racetrack Prize":
             lambda state: (
                 (
-                    can_use_powder_keg(state, player) or 
-                    state.can_reach("Powder Keg Goron Reward", 'Location', player)
+                    # TODO: I deleted the powder keg trial because I don't like it. Would be cleaner to wrap that in a rule.
+                    can_use_powder_keg(state, player)
                 ) and 
                 can_clear_snowhead(state, player, options)
             ),
