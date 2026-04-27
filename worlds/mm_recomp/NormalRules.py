@@ -41,17 +41,17 @@ def can_reach_stonetower(state, player):
             state.has("Goron Mask", player) and 
             state.has("Zora Mask", player))
 
-def can_clear_woodfall(state, player):
-    return state.can_reach("Woodfall Temple Odolwa's Remains", 'Location', player)
+def can_clear_woodfall(state, player, options):
+    return options.dungeon_is_enabled("Woodfall Temple") and state.can_reach("Woodfall Temple Odolwa's Remains", 'Location', player)
     
-def can_clear_snowhead(state, player):
-    return state.can_reach("Snowhead Temple Goht's Remains", 'Location', player)
+def can_clear_snowhead(state, player, options):
+    return options.dungeon_is_enabled("Snowhead Temple") and state.can_reach("Snowhead Temple Goht's Remains", 'Location', player)
     
-def can_clear_greatbay(state, player):
-    return state.can_reach("Great Bay Temple Gyorg's Remains", 'Location', player)
+def can_clear_greatbay(state, player, options):
+    return options.dungeon_is_enabled("Great Bay Temple") and state.can_reach("Great Bay Temple Gyorg's Remains", 'Location', player)
     
-def can_clear_stonetower(state, player):
-    return state.can_reach("Stone Tower Temple Inverted Twinmold's Remains", 'Location', player)
+def can_clear_stonetower(state, player, options):
+    return options.dungeon_is_enabled("Stone Tower Temple") and state.can_reach("Stone Tower Temple Inverted Twinmold's Remains", 'Location', player)
 
 def has_paper(state, player):
     return (state.has("Land Title Deed", player) or 
@@ -899,7 +899,7 @@ def get_location_rules(player, options, prices):
             ),
         "Deku Palace Butler Race":
             lambda state: (
-                can_clear_woodfall(state, player) and 
+                can_clear_woodfall(state, player, options) and 
                 has_bottle(state, player) and 
                 (
                     state.has("Progressive Sword", player) or 
@@ -1057,7 +1057,7 @@ def get_location_rules(player, options, prices):
             
         "Southern Swamp Boat Archery":
             lambda state: (
-                can_clear_woodfall(state, player) and 
+                can_clear_woodfall(state, player, options) and 
                 has_bottle(state, player) and 
                 state.has("Progressive Bow", player)
             ),
@@ -1077,17 +1077,18 @@ def get_location_rules(player, options, prices):
                 )
             ),
         "Mountain Village Spring Waterfall Chest":
-            lambda state: can_clear_snowhead(state, player),
+            lambda state: can_clear_snowhead(state, player, options),
         "Mountain Village Spring Ramp Grotto":
-            lambda state: can_clear_snowhead(state, player),
+            lambda state: can_clear_snowhead(state, player, options),
         "Mountain Village Spring Frog Choir HP":
             lambda state: (
                 state.has("Don Gero Mask", player) and 
-                can_clear_snowhead(state, player) and 
-                state.can_reach("Woodfall Temple Gekko Chest", 'Location', player) and 
-                state.can_reach("Great Bay Temple", 'Region', player) and 
-                can_use_ice_arrows(state, player) and 
-                can_use_fire_arrows(state, player)
+                can_clear_snowhead(state, player, options) and 
+                (options.dungeon_is_enabled("Woodfall Temple") and state.can_reach("Woodfall Temple Gekko Chest", 'Location', player)) and 
+                (options.dungeon_is_enabled("Great Bay Temple") and
+                    state.can_reach("Great Bay Temple", 'Region', player) and 
+                    can_use_ice_arrows(state, player) and 
+                    can_use_fire_arrows(state, player))
             ),
         "Mountain Village Smithy Upgrade":
             lambda state: (
@@ -1095,13 +1096,13 @@ def get_location_rules(player, options, prices):
                 (
                     can_use_fire_arrows(state, player) or 
                     state.can_reach("Twin Islands Hot Water Grotto Chest", 'Location', player) or 
-                    can_clear_snowhead(state, player)
+                    can_clear_snowhead(state, player, options)
                 )
             ),
         "Mountain Village Smithy Gold Dust Upgrade":
             lambda state: (
                 state.can_reach("Mountain Village Smithy Upgrade", 'Location', player) and 
-                state.can_reach("Goron Racetrack Prize", 'Location', player) and 
+                (options.dungeon_is_enabled("Snowhead Temple") and  state.can_reach("Goron Racetrack Prize", 'Location', player)) and 
                 has_bottle(state, player)
             ),
             
@@ -1151,7 +1152,7 @@ def get_location_rules(player, options, prices):
                     has_explosives(state, player)
                 ) or 
                 (
-                    can_clear_snowhead(state, player) or 
+                    can_clear_snowhead(state, player, options) or 
                     (
                         state.can_reach("Ikana Well Invisible Chest", 'Location', player) and 
                         can_play_song("Song of Soaring", state, player)
@@ -1161,12 +1162,12 @@ def get_location_rules(player, options, prices):
         "Twin Islands Spring Underwater Cave Chest":
             lambda state: (
                 state.has("Zora Mask", player) and 
-                can_clear_snowhead(state, player)
+                can_clear_snowhead(state, player, options)
             ),
         "Twin Islands Spring Underwater Ramp Chest":
             lambda state: (
                 state.has("Zora Mask", player) and 
-                can_clear_snowhead(state, player)
+                can_clear_snowhead(state, player, options)
             ),
         "Goron Racetrack Prize":
             lambda state: (
@@ -1174,7 +1175,7 @@ def get_location_rules(player, options, prices):
                     can_use_powder_keg(state, player) or 
                     state.can_reach("Powder Keg Goron Reward", 'Location', player)
                 ) and 
-                can_clear_snowhead(state, player)
+                can_clear_snowhead(state, player, options)
             ),
             
         "Goron Village Lens Cave Rock Chest":
@@ -1206,7 +1207,7 @@ def get_location_rules(player, options, prices):
             ),
         "Powder Keg Goron Reward":
             lambda state: (
-                can_clear_snowhead(state, player) or 
+                can_clear_snowhead(state, player, options) or 
                 (
                     can_use_fire_arrows(state, player) and 
                     state.has("Goron Mask", player)
@@ -1236,23 +1237,23 @@ def get_location_rules(player, options, prices):
             lambda state: (
                 state.has("Goron Mask", player) and 
                 can_purchase(state, player, prices, SHOP_ID_GORON_SHOP_SPRING_1) and 
-                can_clear_snowhead(state, player)
+                can_clear_snowhead(state, player, options)
             ),
         "Goron Village Shop (Spring) Item 2":
             lambda state: (
                 state.has("Goron Mask", player) and 
                 can_purchase(state, player, prices, SHOP_ID_GORON_SHOP_SPRING_2) and 
-                can_clear_snowhead(state, player)
+                can_clear_snowhead(state, player, options)
             ),
         "Goron Village Shop (Spring) Item 3":
             lambda state: (
                 state.has("Goron Mask", player) and 
                 can_purchase(state, player, prices, SHOP_ID_GORON_SHOP_SPRING_3) and 
-                can_clear_snowhead(state, player)
+                can_clear_snowhead(state, player, options)
             ),
         "Goron Village Freestanding HP (Spring)":
             lambda state: (
-                can_clear_snowhead(state, player) and 
+                can_clear_snowhead(state, player, options) and 
                 state.has("Deku Mask", player) and 
                 state.has("Swamp Title Deed", player)
             ),
@@ -1575,7 +1576,7 @@ def get_location_rules(player, options, prices):
         "Great Bay Feeding Lab Fish":
             lambda state: has_bottle(state, player),
         "Great Bay Fisherman Game":
-            lambda state: can_clear_greatbay(state, player),
+            lambda state: can_clear_greatbay(state, player, options),
         
         "Ocean Spider House Ramp Upper Token":
             lambda state: (
@@ -2380,10 +2381,10 @@ def get_location_rules(player, options, prices):
 
         "Oath to Order":
             lambda state: (
-                can_clear_woodfall(state, player) or 
-                can_clear_snowhead(state, player) or 
-                can_clear_greatbay(state, player) or 
-                can_clear_stonetower(state, player)
+                can_clear_woodfall(state, player, options) or 
+                can_clear_snowhead(state, player, options) or 
+                can_clear_greatbay(state, player, options) or 
+                can_clear_stonetower(state, player, options)
             ),
 
         "Moon Deku Trial HP":

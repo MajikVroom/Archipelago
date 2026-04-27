@@ -2,7 +2,7 @@ from typing import List
 from typing import Dict
 from typing import TextIO
 
-from BaseClasses import Region, Tutorial
+from BaseClasses import Region, Tutorial, ItemClassification
 from worlds.AutoWorld import WebWorld, World
 from .Items import MMRItem, item_data_table, item_table, code_to_item_table
 from .Locations import MMRLocation, location_data_table, location_table, code_to_location_table, locked_locations
@@ -94,7 +94,6 @@ class MMRWorld(World):
                     item_pool_count[name] += 1
 
         mw.itempool += item_pool
-        filler_count = 0
 
         mw.push_precollected(self.create_item("Ocarina of Time"))
         mw.push_precollected(self.create_item("Song of Time"))
@@ -107,7 +106,6 @@ class MMRWorld(World):
             
         if self.options.start_with_soaring.value:
             mw.push_precollected(self.create_item("Song of Soaring"))
-            filler_count += 1
         
         if self.options.shuffle_spiderhouse_reward.value:
             mw.itempool.append(self.create_item("Progressive Wallet"))
@@ -119,28 +117,12 @@ class MMRWorld(World):
             mw.push_precollected(self.create_item("Romani Ranch Map"))
             mw.push_precollected(self.create_item("Great Bay Map"))
             mw.push_precollected(self.create_item("Stone Tower Map"))
-            filler_count += 6
 
         if self.options.curiostity_shop_trades.value:
             mw.itempool.append(self.create_item("Blue Rupee"))
             mw.itempool.append(self.create_item("Red Rupee"))
             mw.itempool.append(self.create_item("Purple Rupee"))
             mw.itempool.append(self.create_item("Gold Rupee"))
-            
-        if self.options.scrubsanity.value != 0:
-            filler_count += 4
-        
-        if self.options.shopsanity.value != 0:
-            filler_count += 27
-
-        if self.options.shopsanity.value == 2:
-            filler_count += 11
-        
-        if self.options.cowsanity.value != 0:
-            filler_count += 8
-        
-        if self.options.intro_checks.value:
-            filler_count += 1
 
         shp = self.options.starting_hearts.value
         if self.options.starting_hearts_are_containers_or_pieces.value == 0:
@@ -161,13 +143,14 @@ class MMRWorld(World):
         # going to rebalance it from filler at the very end.
         # This works as long as we have enough filler to buffer the removals. If we don't reliably have that, we'd need
         # to offset by removing filler items from the fixed item pool.
-        unfilled_count = 0 - len(item_pool)
+
+        unfilled_count = 0
         for location in mw.get_unfilled_locations(self.player):
             unfilled_count += 1
-        if filler_count > unfilled_count:
-            self.create_and_add_filler_items(filler_count - unfilled_count)
-        elif filler_count < unfilled_count:
-            raise RuntimeError("Not enough filler to accommodate disabled dungeons.")
+
+        unfilled_count = self.fill_pool_to_target(item_pool, unfilled_count)
+        if unfilled_count > 0:
+            self.create_and_add_filler_items(unfilled_count)
 
     def create_regions(self) -> None:
         player = self.player
@@ -204,12 +187,17 @@ class MMRWorld(World):
             self.place("Tingle Stone Tower Map Purchase", "Stone Tower Map")
 
         if self.options.shuffle_boss_remains.value == 0:
-            self.place("Woodfall Temple Odolwa's Remains", "Odolwa's Remains")
-            self.place("Snowhead Temple Goht's Remains", "Goht's Remains")
-            self.place("Great Bay Temple Gyorg's Remains", "Gyorg's Remains")
-            self.place("Stone Tower Temple Inverted Twinmold's Remains", "Twinmold's Remains")
+            if self.options.dungeon_is_enabled("Woodfall Temple"):
+                self.place("Woodfall Temple Odolwa's Remains", "Odolwa's Remains")
+            if self.options.dungeon_is_enabled("Snowhead Temple"):
+                self.place("Snowhead Temple Goht's Remains", "Goht's Remains")
+            if self.options.dungeon_is_enabled("Great Bay Temple"):
+                self.place("Great Bay Temple Gyorg's Remains", "Gyorg's Remains")
+            if self.options.dungeon_is_enabled("Stone Tower Temple"):
+                self.place("Stone Tower Temple Inverted Twinmold's Remains", "Twinmold's Remains")
         
         if self.options.shuffle_boss_remains.value == 2:
+            # TODO: adjust for disabled dungeons
             remains_list = ["Odolwa's Remains", "Goht's Remains", "Gyorg's Remains", "Twinmold's Remains"]
             
             self.place("Woodfall Temple Odolwa's Remains", remains_list.pop(self.random.randint(0, 3)))
@@ -232,10 +220,15 @@ class MMRWorld(World):
         if not self.options.shuffle_great_fairy_rewards.value:
             self.place("North Clock Town Great Fairy Reward", "Progressive Magic")
             self.place("North Clock Town Great Fairy Reward (Has Transformation Mask)", "Great Fairy Mask")
-            self.place("Woodfall Great Fairy Reward", "Great Spin Attack")
-            self.place("Snowhead Great Fairy Reward", "Progressive Magic")
-            self.place("Great Bay Great Fairy Reward", "Double Defense")
-            self.place("Stone Tower Great Fairy Reward", "Great Fairy Sword")
+
+            if self.options.dungeon_is_enabled("Woodfall Temple"):
+                self.place("Woodfall Great Fairy Reward", "Great Spin Attack")
+            if self.options.dungeon_is_enabled("Snowhead Temple"):
+                self.place("Snowhead Great Fairy Reward", "Progressive Magic")
+            if self.options.dungeon_is_enabled("Great Bay Temple"):
+                self.place("Great Bay Great Fairy Reward", "Double Defense")
+            if self.options.dungeon_is_enabled("Stone Tower Temple"):
+                self.place("Stone Tower Great Fairy Reward", "Great Fairy Sword")
 
         if not self.options.keysanity.value:
             self.place("Woodfall Temple Ledge Chest", "Small Key (Woodfall)")
@@ -260,69 +253,73 @@ class MMRWorld(World):
         if not self.options.fairysanity.value:
             self.place("Laundry Pool Stray Fairy (Clock Town)", "Stray Fairy (Clock Town)")
 
-            self.place("Woodfall Temple Entrance Chest SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Switch Chest SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Dark Room Chest SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Entrance Freestanding SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Deku Baba SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pot SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Platform Hive SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Main Room Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Skulltula SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Bridge Room Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Bridge Room Hive SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pre-Boss Lower Right Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pre-Boss Upper Right Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pre-Boss Upper Left Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pre-Boss Pillar Bubble SF", "Stray Fairy (Woodfall)")
+            if self.options.dungeon_is_enabled("Woodfall Temple"):
+                    self.place("Woodfall Temple Entrance Chest SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Switch Chest SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Dark Room Chest SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Entrance Freestanding SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Deku Baba SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Pot SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Platform Hive SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Main Room Bubble SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Skulltula SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Bridge Room Bubble SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Bridge Room Hive SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Pre-Boss Lower Right Bubble SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Pre-Boss Upper Right Bubble SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Pre-Boss Upper Left Bubble SF", "Stray Fairy (Woodfall)")
+                    self.place("Woodfall Temple Pre-Boss Pillar Bubble SF", "Stray Fairy (Woodfall)")
             
-            self.place("Snowhead Temple Basement Switch Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Elevator Room Invisible Platform Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Stacked Block Upper Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Freezard Torch Room Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Frozen Block Upper Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Icicle Room Hidden Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Main Room Wall Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Bridge Room Pillar Bubble SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Bridge Room Under Platform Bubble SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Elevator Freestanding SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Bombable Stairs Crate SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Timed Switch Room Bubble SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Snowmen Bubble SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Dinolfos Room First SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Dinolfos Room Second SF", "Stray Fairy (Snowhead)")
+            if self.options.dungeon_is_enabled("Snowhead Temple"):
+                self.place("Snowhead Temple Basement Switch Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Elevator Room Invisible Platform Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Stacked Block Upper Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Freezard Torch Room Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Frozen Block Upper Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Icicle Room Hidden Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Main Room Wall Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Bridge Room Pillar Bubble SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Bridge Room Under Platform Bubble SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Elevator Freestanding SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Bombable Stairs Crate SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Timed Switch Room Bubble SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Snowmen Bubble SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Dinolfos Room First SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Dinolfos Room Second SF", "Stray Fairy (Snowhead)")
 
-            self.place("Great Bay Temple Entrance Torches Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Bio-Baba Hall Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Freezable Waterwheel Upper Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Freezable Waterwheel Lower Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Seesaw Room Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Room Behind Waterfall Ceiling Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Waterwheel Room Skulltula SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Waterwheel Room Bubble SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Blender Pot SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Blender Room Barrel SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Before Red Valve Room Pot SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Caged Chest Room Pot SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Seesaw Room Underwater Barrel SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Pre-Boss Room Platform Bubble SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Pre-Boss Room Tunnel Bubble SF", "Stray Fairy (Great Bay)")
+            if self.options.dungeon_is_enabled("Great Bay Temple"):
+                self.place("Great Bay Temple Entrance Torches Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Bio-Baba Hall Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Freezable Waterwheel Upper Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Freezable Waterwheel Lower Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Seesaw Room Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Room Behind Waterfall Ceiling Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Waterwheel Room Skulltula SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Waterwheel Room Bubble SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Blender Pot SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Blender Room Barrel SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Before Red Valve Room Pot SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Caged Chest Room Pot SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Seesaw Room Underwater Barrel SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Pre-Boss Room Platform Bubble SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Pre-Boss Room Tunnel Bubble SF", "Stray Fairy (Great Bay)")
 
-            self.place("Stone Tower Temple Entrance Room Eye Switch Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Armos Room Upper Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Eyegore Room Switch Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Mirror Room Sun Face Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Mirror Room Sun Block Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Air Gust Room Side Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Air Gust Room Goron Switch Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Eyegore Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Eastern Water Room Underwater Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Entrance Room Sun Face Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Eastern Air Gust Room Frozen Switch Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Wizzrobe Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Eastern Air Gust Room Fire Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Entrance Room Lower Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple After Garo Upside Down Chest", "Stray Fairy (Stone Tower)")
+            if self.options.dungeon_is_enabled("Stone Tower Temple"):
+                self.place("Stone Tower Temple Entrance Room Eye Switch Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Armos Room Upper Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Eyegore Room Switch Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Mirror Room Sun Face Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Mirror Room Sun Block Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Air Gust Room Side Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Air Gust Room Goron Switch Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Eyegore Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Eastern Water Room Underwater Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Entrance Room Sun Face Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Eastern Air Gust Room Frozen Switch Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Wizzrobe Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Eastern Air Gust Room Fire Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Entrance Room Lower Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple After Garo Upside Down Chest", "Stray Fairy (Stone Tower)")
             
         sword_location = mw.get_location("Link's Inventory (Kokiri Sword)", player)
         if self.options.swordless.value:
@@ -359,6 +356,46 @@ class MMRWorld(World):
         # TODO: check options to see what player starts with
         # ~ mw.get_location("Top of Clock Tower (Ocarina of Time)", player).place_locked_item(self.create_item(self.get_filler_item_name()))
         # ~ mw.get_location("Top of Clock Tower (Song of Time)", player).place_locked_item(self.create_item(self.get_filler_item_name()))
+
+    def fill_pool_to_target(self, item_pool, target: int):
+        total_placed = 0
+        total_filler = 0
+        unplaced_filler = {}
+
+        # Start by placing all the non-filler
+        for name, item in item_data_table.items():
+            if item.code and item.can_create(self.options):
+                if item.type == ItemClassification.filler:
+                    unplaced_filler[name] = item.num_exist
+                    total_filler += item.num_exist
+                else:
+                    per_item_count = 0
+                    while per_item_count < item.num_exist:
+                        item_pool.append(self.create_item(name))
+                        per_item_count += 1
+                        total_placed += 1
+        
+        if total_placed > target:
+            raise RuntimeError("Not enough locations available for this item pool")
+        
+        if total_placed + total_filler <= target:
+            # We can place all of the static filler without passing the target. No need to select.
+            for name, num_exist in unplaced_filler.items():
+                per_item_count = 0
+                while per_item_count < num_exist:
+                    item_pool.append(self.create_item(name))
+                    per_item_count += 1
+                    total_placed += 1
+        else:
+            # Draw enough filler to reach the target, and discard the rest.
+            for name in self.random.sample(list(unplaced_filler.keys()), k=(target - total_placed), counts=unplaced_filler.values()):
+                item_pool.append(self.create_item(name))
+                total_placed += 1
+
+        # return the remainder that needs to be added as new filler
+        return target - total_placed
+
+
 
     def create_and_add_filler_items(self, count: int = 1):
         for i in range(count):

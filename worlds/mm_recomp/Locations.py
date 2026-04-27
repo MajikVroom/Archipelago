@@ -761,7 +761,8 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Deku Palace Butler Race": MMRLocationData(
         region="Southern Swamp (Deku Palace)",
-        address=0x346942000008E
+        address=0x346942000008E,
+        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
     ),
     "Woodfall Owl Statue Chest": MMRLocationData(
         region="Woodfall",
@@ -777,7 +778,8 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Woodfall Great Fairy Reward": MMRLocationData(
         region="Woodfall",
-        address=0x3469420030001
+        address=0x3469420030001,
+        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
     ),
     "Woodfall Temple Entrance Chest SF": MMRLocationData(
         region="Woodfall Temple",
@@ -891,15 +893,18 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Southern Swamp Boat Archery": MMRLocationData(
         region="Southern Swamp",
-        address=0x3469420070168
+        address=0x3469420070168,
+        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
     ),
     "Mountain Village Spring Waterfall Chest": MMRLocationData(
         region="Mountain Village",
-        address=0x3469420065A00
+        address=0x3469420065A00,
+        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Mountain Village Spring Ramp Grotto": MMRLocationData(
         region="Mountain Village",
-        address=0x346942006071B
+        address=0x346942006071B,
+        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Mountain Village Healing Darmani": MMRLocationData(
         region="Mountain Village",
@@ -919,15 +924,18 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Mountain Village Spring Frog Choir HP": MMRLocationData(
         region="Mountain Village",
-        address=0x3469420070022
+        address=0x3469420070022,
+        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Twin Islands Spring Underwater Cave Chest": MMRLocationData(
         region="Twin Islands",
-        address=0x3469420065E00
+        address=0x3469420065E00,
+        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Twin Islands Spring Underwater Ramp Chest": MMRLocationData(
         region="Twin Islands",
-        address=0x3469420065E06
+        address=0x3469420065E06,
+        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Twin Islands Ramp Grotto Chest": MMRLocationData(
         region="Twin Islands",
@@ -943,7 +951,8 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Goron Racetrack Prize": MMRLocationData(
         region="Twin Islands",
-        address=0x346942000006A
+        address=0x346942000006A,
+        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Goron Village Lens Cave Rock Chest": MMRLocationData(
         region="Goron Village",
@@ -979,17 +988,17 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Goron Village Shop (Spring) Item 1": MMRLocationData(
         region="Goron Village",
         address=0x3469420090021,
-        can_create=lambda options: options.shopsanity.value == 2
+        can_create=lambda options: options.shopsanity.value == 2 and options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Goron Village Shop (Spring) Item 2": MMRLocationData(
         region="Goron Village",
         address=0x3469420090022,
-        can_create=lambda options: options.shopsanity.value == 2
+        can_create=lambda options: options.shopsanity.value == 2 and options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Goron Village Shop (Spring) Item 3": MMRLocationData(
         region="Goron Village",
         address=0x3469420090023,
-        can_create=lambda options: options.shopsanity.value == 2
+        can_create=lambda options: options.shopsanity.value == 2 and options.dungeon_is_enabled("Snowhead Temple")
     ),    
     "Goron Village Scrub Purchase": MMRLocationData(
         region="Goron Village",
@@ -1023,7 +1032,8 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Snowhead Great Fairy Reward": MMRLocationData(
         region="Snowhead Temple",
-        address=0x3469420030002
+        address=0x3469420030002,
+        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Snowhead Temple Elevator Room Invisible Platform Chest SF": MMRLocationData(
         region="Snowhead Temple",
@@ -1225,7 +1235,8 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Great Bay Fisherman Game": MMRLocationData(
         region="Great Bay",
-        address=0x3469420070292
+        address=0x3469420070292,
+        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
     ),
     "Zora Cape Underwater Like-Like HP": MMRLocationData(
         region="Zora Cape",
@@ -1261,7 +1272,8 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Great Bay Great Fairy Reward": MMRLocationData(
         region="Zora Cape",
-        address=0x3469420030003
+        address=0x3469420030003,
+        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
     ),
     "Zora Hall Shop Item 1": MMRLocationData(
         region="Zora Hall",
@@ -1722,7 +1734,8 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Stone Tower Great Fairy Reward": MMRLocationData(
         region="Ikana Canyon",
-        address=0x3469420030004
+        address=0x3469420030004,
+        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
     ),
     "Ikana Well Final Chest": MMRLocationData(
         region="Beneath the Well",
@@ -1897,7 +1910,8 @@ location_data_table: Dict[str, MMRLocationData] = {
     ),
     "Oath to Order": MMRLocationData(
         region="Clock Town", # there isn't really a set location for this
-        address=0x3469420040065
+        address=0x3469420040065,
+        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple") or options.dungeon_is_enabled("Snowhead Temple") or options.dungeon_is_enabled("Great Bay Temple") or options.dungeon_is_enabled("Stone Tower Temple")
     ),
     "Moon Deku Trial HP": MMRLocationData(
         region="The Moon",
