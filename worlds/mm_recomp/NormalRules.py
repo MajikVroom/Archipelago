@@ -161,9 +161,6 @@ def has_enough_remains(state, player, need_count):
         remains_count += 1
     return remains_count >= need_count
 
-def can_access_dungeon(state, player, dungeon):
-    TODO
-
 def get_region_rules(player, options):
     return {
         "Clock Town -> The Moon":
@@ -209,8 +206,7 @@ def get_region_rules(player, options):
         "Snowhead -> Snowhead Temple": lambda state: (
                 state.has("Goron Mask", player) and 
                 can_play_song("Goron Lullaby", state, player) and 
-                state.has("Progressive Magic", player) and
-                can_access_dungeon(state, player, "Snowhead Temple")
+                state.has("Progressive Magic", player)
             ),            
         "Termina Field -> Great Bay":
             lambda state: can_play_song("Epona's Song", state, player),
@@ -230,8 +226,7 @@ def get_region_rules(player, options):
             lambda state: (
                 can_play_song("New Wave Bossa Nova", state, player) and 
                 state.has("Hookshot", player) and 
-                state.has("Zora Mask", player) and
-                can_access_dungeon(state, player, "Great Bay Temple")
+                state.has("Zora Mask", player)
             ),
         "Road to Ikana -> Ikana Graveyard":
             lambda state: can_play_song("Epona's Song", state, player),
@@ -286,8 +281,7 @@ def get_region_rules(player, options):
             ),
         "Stone Tower -> Stone Tower Temple":
             lambda state: (
-                can_reach_stonetower(state, player) and
-                can_access_dungeon(state, player, "Stone Tower Temple")
+                can_reach_stonetower(state, player)
             ),
         "Stone Tower -> Stone Tower (Inverted)":
             lambda state: (
@@ -296,9 +290,7 @@ def get_region_rules(player, options):
                 can_play_song("Elegy of Emptiness", state, player)
             ),
         "Stone Tower (Inverted) -> Stone Tower Temple (Inverted)":
-            lambda state: (
-                can_access_dungeon(state, player, "Stone Tower Temple")
-            ),
+            lambda state: True,    
     }
 
 def get_location_rules(player, options, prices):

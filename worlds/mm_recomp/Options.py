@@ -265,7 +265,7 @@ class LinkTunicColor(OptionList):
     display_name = "Link Tunic Color"
     default = [30, 105, 27]
 
-class DisabledDungeons():
+class DisabledDungeons(Range):
     """Set the number of dungeons which do not need to be entered to complete the seed."""
     display_name = "Disabled dungeons"
     range_start = 0
@@ -311,3 +311,6 @@ class MMROptions(PerGameCommonOptions):
     death_behavior: DeathBehavior
     death_link: DeathLink
     link_tunic_color: LinkTunicColor
+    
+    def dungeon_is_enabled(self, dungeon):
+        return dungeon not in self.selected_disabled_dungeons

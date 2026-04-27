@@ -455,22 +455,22 @@ item_data_table: Dict[str, MMRItemData] = {
     "Odolwa's Remains": MMRItemData(
         code=0x3469420000055,
         type=ItemClassification.progression,
-        can_create=lambda options: options.shuffle_boss_remains.value == 1
+        can_create=lambda options: options.shuffle_boss_remains.value == 1 and options.dungeon_is_enabled("Woodfall Temple")
     ),
     "Goht's Remains": MMRItemData(
         code=0x3469420000056,
         type=ItemClassification.progression,
-        can_create=lambda options: options.shuffle_boss_remains.value == 1
+        can_create=lambda options: options.shuffle_boss_remains.value == 1 and options.dungeon_is_enabled("Snowhead Temple")
     ),
     "Gyorg's Remains": MMRItemData(
         code=0x3469420000057,
         type=ItemClassification.progression,
-        can_create=lambda options: options.shuffle_boss_remains.value == 1
+        can_create=lambda options: options.shuffle_boss_remains.value == 1 and options.dungeon_is_enabled("Great Bay Temple")
     ),
     "Twinmold's Remains": MMRItemData(
         code=0x3469420000058,
         type=ItemClassification.progression,
-        can_create=lambda options: options.shuffle_boss_remains.value == 1
+        can_create=lambda options: options.shuffle_boss_remains.value == 1 and options.dungeon_is_enabled("Stone Tower Temple")
     ),
     "Progressive Bomb Bag": MMRItemData(
         code=0x346942000001B,

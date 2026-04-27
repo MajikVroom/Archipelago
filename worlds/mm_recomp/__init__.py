@@ -94,6 +94,7 @@ class MMRWorld(World):
                     item_pool_count[name] += 1
 
         mw.itempool += item_pool
+        filler_count = 0
 
         mw.push_precollected(self.create_item("Ocarina of Time"))
         mw.push_precollected(self.create_item("Song of Time"))
@@ -106,7 +107,7 @@ class MMRWorld(World):
             
         if self.options.start_with_soaring.value:
             mw.push_precollected(self.create_item("Song of Soaring"))
-            self.create_and_add_filler_items()
+            filler_count += 1
         
         if self.options.shuffle_spiderhouse_reward.value:
             mw.itempool.append(self.create_item("Progressive Wallet"))
@@ -118,7 +119,7 @@ class MMRWorld(World):
             mw.push_precollected(self.create_item("Romani Ranch Map"))
             mw.push_precollected(self.create_item("Great Bay Map"))
             mw.push_precollected(self.create_item("Stone Tower Map"))
-            self.create_and_add_filler_items(6)
+            filler_count += 6
 
         if self.options.curiostity_shop_trades.value:
             mw.itempool.append(self.create_item("Blue Rupee"))
@@ -127,19 +128,19 @@ class MMRWorld(World):
             mw.itempool.append(self.create_item("Gold Rupee"))
             
         if self.options.scrubsanity.value != 0:
-            self.create_and_add_filler_items(4)
+            filler_count += 4
         
         if self.options.shopsanity.value != 0:
-            self.create_and_add_filler_items(27)
+            filler_count += 27
 
         if self.options.shopsanity.value == 2:
-            self.create_and_add_filler_items(11)
+            filler_count += 11
         
         if self.options.cowsanity.value != 0:
-            self.create_and_add_filler_items(8)
+            filler_count += 8
         
         if self.options.intro_checks.value:
-            self.create_and_add_filler_items(1)
+            filler_count += 1
 
         shp = self.options.starting_hearts.value
         if self.options.starting_hearts_are_containers_or_pieces.value == 0:
@@ -154,6 +155,19 @@ class MMRWorld(World):
         for dungeon in self.options.selected_disabled_dungeons:
             reward_map = {"Woodfall Temple" : "Odolwa's Remains", "Snowhead Temple" : "Goht's Remains", "Great Bay Temple" : "Gyorg's Remains", "Stone Tower Temple" : "Twinmold's Remains"}
             mw.push_precollected(self.create_item(reward_map[dungeon]))
+
+        # REVIEW: Disabling dungeons removes some number of locations without directly reducing the size of the pool of
+        # items needing placement. Instead of calculating the number of items removed by each dungeon disable, I'm just
+        # going to rebalance it from filler at the very end.
+        # This works as long as we have enough filler to buffer the removals. If we don't reliably have that, we'd need
+        # to offset by removing filler items from the fixed item pool.
+        unfilled_count = 0 - len(item_pool)
+        for location in mw.get_unfilled_locations(self.player):
+            unfilled_count += 1
+        if filler_count > unfilled_count:
+            self.create_and_add_filler_items(filler_count - unfilled_count)
+        elif filler_count < unfilled_count:
+            raise RuntimeError("Not enough filler to accommodate disabled dungeons.")
 
     def create_regions(self) -> None:
         player = self.player
