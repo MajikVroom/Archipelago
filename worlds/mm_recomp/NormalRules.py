@@ -204,6 +204,7 @@ def get_region_rules(player, options):
                 state.has("Progressive Magic", player)
             ),
         "Snowhead -> Snowhead Temple": lambda state: (
+                options.dungeon_is_enabled("Snowhead Temple") and
                 state.has("Goron Mask", player) and 
                 can_play_song("Goron Lullaby", state, player) and 
                 state.has("Progressive Magic", player)
@@ -224,6 +225,7 @@ def get_region_rules(player, options):
             lambda state: state.has("Zora Mask", player),
         "Zora Cape -> Great Bay Temple":
             lambda state: (
+                options.dungeon_is_enabled("Great Bay Temple") and
                 can_play_song("New Wave Bossa Nova", state, player) and 
                 state.has("Hookshot", player) and 
                 state.has("Zora Mask", player)
@@ -285,12 +287,15 @@ def get_region_rules(player, options):
             ),
         "Stone Tower -> Stone Tower (Inverted)":
             lambda state: (
+                options.dungeon_is_enabled("Stone Tower Temple") and
                 can_reach_stonetower(state, player) and 
                 can_use_light_arrows(state, player) and 
                 can_play_song("Elegy of Emptiness", state, player)
             ),
         "Stone Tower (Inverted) -> Stone Tower Temple (Inverted)":
-            lambda state: True,    
+            lambda state: (
+                options.dungeon_is_enabled("Stone Tower Temple")
+            ),    
     }
 
 def get_location_rules(player, options, prices):

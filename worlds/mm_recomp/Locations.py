@@ -12,6 +12,7 @@ class MMRLocationData(NamedTuple):
     address: Optional[int] = None
     can_create: Callable = lambda options: True
     locked_item: Optional[str] = None
+    dungeon_affinity: Optional[str] = None
 
 
 def can_create_heart_location(shp, c_or_p, loc_index):
