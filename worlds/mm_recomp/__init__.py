@@ -182,7 +182,7 @@ class MMRWorld(World):
 
         if self.options.shuffle_boss_remains.value == 0 or self.options.shuffle_boss_remains.value == 2:
             dungeon_reward_locations = {"Woodfall Temple" : "Woodfall Temple Odolwa's Remains", "Snowhead Temple" : "Snowhead Temple Goht's Remains",
-                                        "Great Bay Temple" : "Great Bay Temple Gyorg's Remains", "Stone Tower Temple Temple" : "Stone Tower Temple Inverted Twinmold's Remains"}
+                                        "Great Bay Temple" : "Great Bay Temple Gyorg's Remains", "Stone Tower Temple" : "Stone Tower Temple Inverted Twinmold's Remains"}
             remains_list = ["Odolwa's Remains", "Goht's Remains", "Gyorg's Remains", "Twinmold's Remains"]
             if self.options.shuffle_boss_remains.value == 2:
                 self.random.shuffle(remains_list)

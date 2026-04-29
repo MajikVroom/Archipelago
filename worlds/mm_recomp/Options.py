@@ -284,6 +284,10 @@ class DisabledDungeons(Range):
     inaccessible that we can't place all the non-filler items, which causes accessibility=full
     to fail. You can either go down to accessibility=minimal, or rely on other worlds to
     accommodate your excess progressive/useful items.
+
+    Arguably, this setting should just be incompatible with accessibility=full. But as-is, it
+    at least gives you "all non-filler items reachable", even though not all locations are
+    reachable.
     """
     display_name = "Disabled dungeons"
     range_start = 0
@@ -332,4 +336,7 @@ class MMROptions(PerGameCommonOptions):
     link_tunic_color: LinkTunicColor
     
     def dungeon_is_enabled(self, dungeon):
+        # TODO: Remove (debug)
+        if dungeon is not None and dungeon not in ["Woodfall Temple", "Snowhead Temple", "Great Bay Temple", "Stone Tower Temple"]:
+            raise RuntimeError("I typo'd")
         return dungeon is None or dungeon not in self.selected_disabled_dungeons
