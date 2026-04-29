@@ -763,7 +763,7 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Deku Palace Butler Race": MMRLocationData(
         region="Southern Swamp (Deku Palace)",
         address=0x346942000008E,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Owl Statue Chest": MMRLocationData(
         region="Woodfall",
@@ -780,132 +780,132 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Woodfall Great Fairy Reward": MMRLocationData(
         region="Woodfall",
         address=0x3469420030001,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Entrance Chest SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420061B18,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Ledge Chest": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420061B01,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Turtle Chest": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420061B1D,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Dragonfly Chest": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420061B1C,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Dark Room Chest SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420061B19,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Switch Chest SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420061B17,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Dinolfos Chest": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420061B1B,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Gekko Chest": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420061B1E,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Entrance Freestanding SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B2B,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Deku Baba SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B2E,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Pot SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B1C,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Platform Hive SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B1E,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Main Room Bubble SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B30,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Skulltula SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B31,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Bridge Room Bubble SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B2F,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Bridge Room Hive SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B1D,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Pre-Boss Lower Right Bubble SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B2A,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Pre-Boss Upper Right Bubble SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B32,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Pre-Boss Upper Left Bubble SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B2C,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Pre-Boss Pillar Bubble SF": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420011B2D,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Heart Container": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420051F00,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Woodfall Temple Odolwa's Remains": MMRLocationData(
         region="Woodfall Temple",
         address=0x3469420000055,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Southern Swamp Boat Archery": MMRLocationData(
         region="Southern Swamp",
         address=0x3469420070168,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple")
+        dungeon_affinity="Woodfall Temple"
     ),
     "Mountain Village Spring Waterfall Chest": MMRLocationData(
         region="Mountain Village",
         address=0x3469420065A00,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Mountain Village Spring Ramp Grotto": MMRLocationData(
         region="Mountain Village",
         address=0x346942006071B,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Mountain Village Healing Darmani": MMRLocationData(
         region="Mountain Village",
@@ -926,17 +926,17 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Mountain Village Spring Frog Choir HP": MMRLocationData(
         region="Mountain Village",
         address=0x3469420070022,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Twin Islands Spring Underwater Cave Chest": MMRLocationData(
         region="Twin Islands",
         address=0x3469420065E00,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Twin Islands Spring Underwater Ramp Chest": MMRLocationData(
         region="Twin Islands",
         address=0x3469420065E06,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Twin Islands Ramp Grotto Chest": MMRLocationData(
         region="Twin Islands",
@@ -953,7 +953,7 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Goron Racetrack Prize": MMRLocationData(
         region="Twin Islands",
         address=0x346942000006A,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Goron Village Lens Cave Rock Chest": MMRLocationData(
         region="Goron Village",
@@ -989,17 +989,17 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Goron Village Shop (Spring) Item 1": MMRLocationData(
         region="Goron Village",
         address=0x3469420090021,
-        can_create=lambda options: options.shopsanity.value == 2 and options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Goron Village Shop (Spring) Item 2": MMRLocationData(
         region="Goron Village",
         address=0x3469420090022,
-        can_create=lambda options: options.shopsanity.value == 2 and options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Goron Village Shop (Spring) Item 3": MMRLocationData(
         region="Goron Village",
         address=0x3469420090023,
-        can_create=lambda options: options.shopsanity.value == 2 and options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),    
     "Goron Village Scrub Purchase": MMRLocationData(
         region="Goron Village",
@@ -1034,127 +1034,127 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Snowhead Great Fairy Reward": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420030002,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Elevator Room Invisible Platform Chest SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062113,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Lower Wizzrobe Chest": MMRLocationData(
         region="Snowhead Temple",
         address=0x346942006211B,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Bridge Room Under Platform Bubble SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x346942001212F,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Bridge Room Pillar Bubble SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420012130,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Elevator Freestanding SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420012132,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Bombable Stairs Crate SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x346942001211E,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Timed Switch Room Bubble SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x346942001212C,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Snowmen Bubble SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x346942001212B,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Dinolfos Room First SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420012131,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Dinolfos Room Second SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x346942001212D,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Bridge Room Freezard Chest": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062101,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Elevator Room Lower Chest": MMRLocationData(
         region="Snowhead Temple",
         address=0x346942006211D,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Basement Switch Chest SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062114,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Freezard Torch Room Chest SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062118,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Behind Stacked Block Chest": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062103,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Stacked Block Upper Chest SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062115,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Frozen Block Chest": MMRLocationData(
         region="Snowhead Temple",
         address=0x346942006211C,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Frozen Block Upper Chest SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062119,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Icicle Room Hidden Chest SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062116,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Icicle Room Snowball Chest": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062104,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Upper Wizzrobe Chest": MMRLocationData(
         region="Snowhead Temple",
         address=0x346942006211E,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Main Room Wall Chest SF": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420062117,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Heart Container": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420054400,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Snowhead Temple Goht's Remains": MMRLocationData(
         region="Snowhead Temple",
         address=0x3469420000056,
-        can_create=lambda options: options.dungeon_is_enabled("Snowhead Temple")
+        dungeon_affinity="Snowhead Temple"
     ),
     "Milk Road Gorman Ranch Race": MMRLocationData(
         region="Gorman Brothers Track",
@@ -1237,7 +1237,7 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Great Bay Fisherman Game": MMRLocationData(
         region="Great Bay",
         address=0x3469420070292,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Zora Cape Underwater Like-Like HP": MMRLocationData(
         region="Zora Cape",
@@ -1274,7 +1274,7 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Great Bay Great Fairy Reward": MMRLocationData(
         region="Zora Cape",
         address=0x3469420030003,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Zora Hall Shop Item 1": MMRLocationData(
         region="Zora Hall",
@@ -1541,112 +1541,112 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Great Bay Temple Blender Pot SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942001491B,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Waterwheel Room Skulltula SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420014932,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Waterwheel Room Bubble SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420014930,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Blender Room Barrel SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942001491C,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Before Red Valve Room Pot SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942001491E,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Caged Chest Room Pot SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942001491D,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Seesaw Room Underwater Barrel SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942001491A,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Entrance Torches Chest SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420064918,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Behind Locked Door Chest": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942006491B,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Before Red Valve Room Chest": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942006491D,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Bio-Baba Hall Chest SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420064919,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Caged Chest Room Upper Chest": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942006491C,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Caged Chest Room Underwater Chest": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420064901,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Mad Jellied Gekko Chest": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942006491E,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Room Behind Waterfall Ceiling Chest SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420064915,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Freezable Waterwheel Upper Chest SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420064914,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Freezable Waterwheel Lower Chest SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420064917,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Seesaw Room Chest SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420064916,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Pre-Boss Room Platform Bubble SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420014931,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Pre-Boss Room Tunnel Bubble SF": MMRLocationData(
         region="Great Bay Temple",
         address=0x346942001492F,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Heart Container": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420055F00,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Great Bay Temple Gyorg's Remains": MMRLocationData(
         region="Great Bay Temple",
         address=0x3469420000057,
-        can_create=lambda options: options.dungeon_is_enabled("Great Bay Temple")
+        dungeon_affinity="Great Bay Temple"
     ),
     "Road to Ikana Pillar Chest": MMRLocationData(
         region="Road to Ikana",
@@ -1736,7 +1736,7 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Stone Tower Great Fairy Reward": MMRLocationData(
         region="Ikana Canyon",
         address=0x3469420030004,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Ikana Well Final Chest": MMRLocationData(
         region="Beneath the Well",
@@ -1782,137 +1782,137 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Stone Tower Temple Entrance Room Eye Switch Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x3469420061616,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Entrance Room Lower Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x3469420061612,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Armos Room Lava Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x3469420061602,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Armos Room Back Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x346942006161D,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Armos Room Upper Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x3469420061615,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Eyegore Room Switch Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x3469420061618,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Eastern Water Room Sun Block Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x346942006161C,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Eastern Water Room Underwater Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x3469420061617,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Eyegore Room Dexi Hand Ledge Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x3469420061601,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Mirror Room Sun Block Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x346942006160B,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Mirror Room Sun Face Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x346942006160F,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Air Gust Room Side Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x3469420061619,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Air Gust Room Goron Switch Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x346942006160D,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Garo Master Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x346942006161B,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple After Garo Upside Down Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x3469420061614,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Eyegore Chest": MMRLocationData(
         region="Stone Tower Temple",
         address=0x346942006160C,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Entrance Room Sun Face Chest": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x3469420061810,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Eastern Air Gust Room Fire Chest": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x346942006180E,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Eastern Air Gust Room Frozen Switch Chest": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x3469420061813,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Eastern Air Gust Room Switch Chest": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x3469420061804,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Wizzrobe Chest": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x3469420061811,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Death Armos Maze Chest": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x3469420061805,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Gomess Chest": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x346942006181E,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Eyegore Chest": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x346942006181A,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Heart Container": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x3469420053600,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Stone Tower Temple Inverted Twinmold's Remains": MMRLocationData(
         region="Stone Tower Temple (Inverted)",
         address=0x3469420000058,
-        can_create=lambda options: options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Oath to Order": MMRLocationData(
         region="Clock Town", # there isn't really a set location for this
         address=0x3469420040065,
-        can_create=lambda options: options.dungeon_is_enabled("Woodfall Temple") or options.dungeon_is_enabled("Snowhead Temple") or options.dungeon_is_enabled("Great Bay Temple") or options.dungeon_is_enabled("Stone Tower Temple")
+        dungeon_affinity="Stone Tower Temple"
     ),
     "Moon Deku Trial HP": MMRLocationData(
         region="The Moon",
