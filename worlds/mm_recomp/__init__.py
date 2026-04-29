@@ -139,16 +139,14 @@ class MMRWorld(World):
         else:
             for i in range(0, 12 - shp):
                 mw.itempool.append(self.create_item("Heart Piece"))
-        
-        for dungeon in self.options.selected_disabled_dungeons:
-            reward_map = {"Woodfall Temple" : "Odolwa's Remains", "Snowhead Temple" : "Goht's Remains", "Great Bay Temple" : "Gyorg's Remains", "Stone Tower Temple" : "Twinmold's Remains"}
-            mw.push_precollected(self.create_item(reward_map[dungeon]))
 
-        # REVIEW: Disabling dungeons removes some number of locations without directly reducing the size of the pool of
-        # items needing placement. Instead of calculating the number of items removed by each dungeon disable, I'm just
-        # going to rebalance it from filler at the very end.
-        # This works as long as we have enough filler to buffer the removals. If we don't reliably have that, we'd need
-        # to offset by removing filler items from the fixed item pool.
+        # REVIEW: I'm lazy, and don't want to update all of the "don't place keys/fairies if the dungeon is disabled"
+        # code to offset the non-placed items by adding filler to the pool. And a previous version of disabled_dungeons
+        # attempted to remove unreachable locations entirely, which required more complicated logic here (but that ran
+        # into problems with client code which doesn't expect an entire dungeon's worth of checks to vanish, so I
+        # had to change my approach).
+        # Anyway, I wrote this auto-balancer. If there aren't enough locations to fit the entire static item pool,
+        # it'll remove static filler. If there are unfilled locations, it'll create filler.
 
         unfilled_count = 0
         for location in mw.get_unfilled_locations(self.player):
@@ -192,20 +190,19 @@ class MMRWorld(World):
             self.place("Tingle Great Bay Map Purchase", "Great Bay Map")
             self.place("Tingle Stone Tower Map Purchase", "Stone Tower Map")
 
-        if self.options.shuffle_boss_remains.value == 0:
-            self.place("Woodfall Temple Odolwa's Remains", "Odolwa's Remains")
-            self.place("Snowhead Temple Goht's Remains", "Goht's Remains")
-            self.place("Great Bay Temple Gyorg's Remains", "Gyorg's Remains")
-            self.place("Stone Tower Temple Inverted Twinmold's Remains", "Twinmold's Remains")
-        
-        if self.options.shuffle_boss_remains.value == 2:
-            # TODO: adjust for disabled dungeons
+        if self.options.shuffle_boss_remains.value == 0 or self.options.shuffle_boss_remains.value == 2:
+            dungeon_reward_locations = {"Woodfall Temple" : "Woodfall Temple Odolwa's Remains", "Snowhead Temple" : "Snowhead Temple Goht's Remains",
+                                        "Great Bay Temple" : "Great Bay Temple Gyorg's Remains", "Stone Tower Temple Temple" : "Stone Tower Temple Inverted Twinmold's Remains"}
             remains_list = ["Odolwa's Remains", "Goht's Remains", "Gyorg's Remains", "Twinmold's Remains"]
-            
-            self.place("Woodfall Temple Odolwa's Remains", remains_list.pop(self.random.randint(0, 3)))
-            self.place("Snowhead Temple Goht's Remains", remains_list.pop(self.random.randint(0, 2)))
-            self.place("Great Bay Temple Gyorg's Remains", remains_list.pop(self.random.randint(0, 1)))
-            self.place("Stone Tower Temple Inverted Twinmold's Remains", remains_list[0])
+            if self.options.shuffle_boss_remains.value == 2:
+                self.random.shuffle(remains_list)
+
+            # Place all of the remains in an enabled dungeon, or in the starting inventory.
+            for dungeon, reward_location in dungeon_reward_locations.items():
+                if self.options.dungeon_is_enabled(dungeon):
+                    self.place(reward_location, remains_list.pop(0))
+                else:
+                    self.multiworld.push_precollected(self.create_item(remains_list.pop(0)))
 
         if not self.options.shuffle_spiderhouse_reward.value:
             self.place("Swamp Spider House Reward", "Mask of Truth")
@@ -222,93 +219,111 @@ class MMRWorld(World):
         if not self.options.shuffle_great_fairy_rewards.value:
             self.place("North Clock Town Great Fairy Reward", "Progressive Magic")
             self.place("North Clock Town Great Fairy Reward (Has Transformation Mask)", "Great Fairy Mask")
-            self.place("Woodfall Great Fairy Reward", "Great Spin Attack")
-            self.place("Snowhead Great Fairy Reward", "Progressive Magic")
-            self.place("Great Bay Great Fairy Reward", "Double Defense")
-            self.place("Stone Tower Great Fairy Reward", "Great Fairy Sword")
+
+            # Great fairies are only accessible (and allowed to have progressive items) if their dungeon is enabled,
+            # or their fairies can be found outside their dungeon.
+            # REVIEW: If a great fairy is inaccessible, should their items go into the pool? Because right now they're effectively deleted.
+            if self.options.fairysanity or self.options.dungeon_is_enabled("Woodfall Temple"):
+                self.place("Woodfall Great Fairy Reward", "Great Spin Attack")
+            if self.options.fairysanity or self.options.dungeon_is_enabled("Snowhead Temple"):
+                self.place("Snowhead Great Fairy Reward", "Progressive Magic")
+            if self.options.fairysanity or self.options.dungeon_is_enabled("Great Bay Temple"):
+                self.place("Great Bay Great Fairy Reward", "Double Defense")
+            if self.options.fairysanity or self.options.dungeon_is_enabled("Stone Tower Temple"):
+                self.place("Stone Tower Great Fairy Reward", "Great Fairy Sword")
 
         if not self.options.keysanity.value:
-            self.place("Woodfall Temple Ledge Chest", "Small Key (Woodfall)")
+            if self.options.dungeon_is_enabled("Woodfall Temple"):
+                self.place("Woodfall Temple Ledge Chest", "Small Key (Woodfall)")
+            if self.options.dungeon_is_enabled("Snowhead Temple"):
+                self.place("Snowhead Temple Behind Stacked Block Chest", "Small Key (Snowhead)")
+                self.place("Snowhead Temple Icicle Room Snowball Chest", "Small Key (Snowhead)")
+                self.place("Snowhead Temple Bridge Room Freezard Chest", "Small Key (Snowhead)")
+            if self.options.dungeon_is_enabled("Great Bay Temple"):
+                self.place("Great Bay Temple Caged Chest Room Underwater Chest", "Small Key (Great Bay)")
+            if self.options.dungeon_is_enabled("Stone Tower Temple"):
+                self.place("Stone Tower Temple Armos Room Lava Chest", "Small Key (Stone Tower)")
+                self.place("Stone Tower Temple Eyegore Room Dexi Hand Ledge Chest", "Small Key (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Eastern Air Gust Room Switch Chest", "Small Key (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Death Armos Maze Chest", "Small Key (Stone Tower)")
 
-            self.place("Snowhead Temple Behind Stacked Block Chest", "Small Key (Snowhead)")
-            self.place("Snowhead Temple Icicle Room Snowball Chest", "Small Key (Snowhead)")
-            self.place("Snowhead Temple Bridge Room Freezard Chest", "Small Key (Snowhead)")
-
-            self.place("Great Bay Temple Caged Chest Room Underwater Chest", "Small Key (Great Bay)")
-
-            self.place("Stone Tower Temple Armos Room Lava Chest", "Small Key (Stone Tower)")
-            self.place("Stone Tower Temple Eyegore Room Dexi Hand Ledge Chest", "Small Key (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Eastern Air Gust Room Switch Chest", "Small Key (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Death Armos Maze Chest", "Small Key (Stone Tower)")
-        
         if not self.options.bosskeysanity.value:
-            self.place("Woodfall Temple Gekko Chest", "Boss Key (Woodfall)")
-            self.place("Snowhead Temple Upper Wizzrobe Chest", "Boss Key (Snowhead)")
-            self.place("Great Bay Temple Mad Jellied Gekko Chest", "Boss Key (Great Bay)")
-            self.place("Stone Tower Temple Inverted Gomess Chest", "Boss Key (Stone Tower)")
+            if self.options.dungeon_is_enabled("Woodfall Temple"):
+                self.place("Woodfall Temple Gekko Chest", "Boss Key (Woodfall)")
+            if self.options.dungeon_is_enabled("Snowhead Temple"):
+                self.place("Snowhead Temple Upper Wizzrobe Chest", "Boss Key (Snowhead)")
+            if self.options.dungeon_is_enabled("Great Bay Temple"):
+                self.place("Great Bay Temple Mad Jellied Gekko Chest", "Boss Key (Great Bay)")
+            if self.options.dungeon_is_enabled("Stone Tower Temple"):
+                self.place("Stone Tower Temple Inverted Gomess Chest", "Boss Key (Stone Tower)")
 
         if not self.options.fairysanity.value:
             self.place("Laundry Pool Stray Fairy (Clock Town)", "Stray Fairy (Clock Town)")
-            self.place("Woodfall Temple Entrance Chest SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Switch Chest SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Dark Room Chest SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Entrance Freestanding SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Deku Baba SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pot SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Platform Hive SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Main Room Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Skulltula SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Bridge Room Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Bridge Room Hive SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pre-Boss Lower Right Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pre-Boss Upper Right Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pre-Boss Upper Left Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Woodfall Temple Pre-Boss Pillar Bubble SF", "Stray Fairy (Woodfall)")
-            self.place("Snowhead Temple Basement Switch Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Elevator Room Invisible Platform Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Stacked Block Upper Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Freezard Torch Room Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Frozen Block Upper Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Icicle Room Hidden Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Main Room Wall Chest SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Bridge Room Pillar Bubble SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Bridge Room Under Platform Bubble SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Elevator Freestanding SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Bombable Stairs Crate SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Timed Switch Room Bubble SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Snowmen Bubble SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Dinolfos Room First SF", "Stray Fairy (Snowhead)")
-            self.place("Snowhead Temple Dinolfos Room Second SF", "Stray Fairy (Snowhead)")
-            self.place("Great Bay Temple Entrance Torches Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Bio-Baba Hall Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Freezable Waterwheel Upper Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Freezable Waterwheel Lower Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Seesaw Room Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Room Behind Waterfall Ceiling Chest SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Waterwheel Room Skulltula SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Waterwheel Room Bubble SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Blender Pot SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Blender Room Barrel SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Before Red Valve Room Pot SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Caged Chest Room Pot SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Seesaw Room Underwater Barrel SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Pre-Boss Room Platform Bubble SF", "Stray Fairy (Great Bay)")
-            self.place("Great Bay Temple Pre-Boss Room Tunnel Bubble SF", "Stray Fairy (Great Bay)")
-            self.place("Stone Tower Temple Entrance Room Eye Switch Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Armos Room Upper Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Eyegore Room Switch Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Mirror Room Sun Face Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Mirror Room Sun Block Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Air Gust Room Side Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Air Gust Room Goron Switch Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Eyegore Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Eastern Water Room Underwater Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Entrance Room Sun Face Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Eastern Air Gust Room Frozen Switch Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Wizzrobe Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Inverted Eastern Air Gust Room Fire Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple Entrance Room Lower Chest", "Stray Fairy (Stone Tower)")
-            self.place("Stone Tower Temple After Garo Upside Down Chest", "Stray Fairy (Stone Tower)")
+
+            if self.options.dungeon_is_enabled("Woodfall Temple"):
+                self.place("Woodfall Temple Entrance Chest SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Switch Chest SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Dark Room Chest SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Entrance Freestanding SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Deku Baba SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Pot SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Platform Hive SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Main Room Bubble SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Skulltula SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Bridge Room Bubble SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Bridge Room Hive SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Pre-Boss Lower Right Bubble SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Pre-Boss Upper Right Bubble SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Pre-Boss Upper Left Bubble SF", "Stray Fairy (Woodfall)")
+                self.place("Woodfall Temple Pre-Boss Pillar Bubble SF", "Stray Fairy (Woodfall)")
+            if self.options.dungeon_is_enabled("Snowhead Temple"):
+                self.place("Snowhead Temple Basement Switch Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Elevator Room Invisible Platform Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Stacked Block Upper Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Freezard Torch Room Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Frozen Block Upper Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Icicle Room Hidden Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Main Room Wall Chest SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Bridge Room Pillar Bubble SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Bridge Room Under Platform Bubble SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Elevator Freestanding SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Bombable Stairs Crate SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Timed Switch Room Bubble SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Snowmen Bubble SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Dinolfos Room First SF", "Stray Fairy (Snowhead)")
+                self.place("Snowhead Temple Dinolfos Room Second SF", "Stray Fairy (Snowhead)")
+            if self.options.dungeon_is_enabled("Great Bay Temple"):
+                self.place("Great Bay Temple Entrance Torches Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Bio-Baba Hall Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Freezable Waterwheel Upper Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Freezable Waterwheel Lower Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Seesaw Room Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Room Behind Waterfall Ceiling Chest SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Waterwheel Room Skulltula SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Waterwheel Room Bubble SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Blender Pot SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Blender Room Barrel SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Before Red Valve Room Pot SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Caged Chest Room Pot SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Seesaw Room Underwater Barrel SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Pre-Boss Room Platform Bubble SF", "Stray Fairy (Great Bay)")
+                self.place("Great Bay Temple Pre-Boss Room Tunnel Bubble SF", "Stray Fairy (Great Bay)")
+            if self.options.dungeon_is_enabled("Stone Tower Temple"):
+                self.place("Stone Tower Temple Entrance Room Eye Switch Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Armos Room Upper Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Eyegore Room Switch Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Mirror Room Sun Face Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Mirror Room Sun Block Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Air Gust Room Side Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Air Gust Room Goron Switch Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Eyegore Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Eastern Water Room Underwater Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Entrance Room Sun Face Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Eastern Air Gust Room Frozen Switch Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Wizzrobe Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Inverted Eastern Air Gust Room Fire Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple Entrance Room Lower Chest", "Stray Fairy (Stone Tower)")
+                self.place("Stone Tower Temple After Garo Upside Down Chest", "Stray Fairy (Stone Tower)")
 
         sword_location = mw.get_location("Link's Inventory (Kokiri Sword)", player)
         if self.options.swordless.value:
@@ -453,7 +468,11 @@ class MMRWorld(World):
             if self.options.skullsanity.value == 2 and (name == "Swamp Spider House Reward" or name == "Ocean Spider House Reward"):
                 continue
             if name in location_rules and location_data_table[name].can_create(self.options):
-                location.access_rule = location_rules[name]
+                if not self.options.dungeon_is_enabled(location_data_table[name].dungeon_affinity):
+                    # Locations affine to disabled dungeons are inaccessible.
+                    location.access_rule = lambda state: False
+                else:
+                    location.access_rule = location_rules[name]
 
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
         if self.options.shopsanity.value:

@@ -278,7 +278,13 @@ class LinkTunicColor(OptionList):
     default = [30, 105, 27]
 
 class DisabledDungeons(Range):
-    """Set the number of dungeons which do not need to be entered to complete the seed."""
+    """Set the number of dungeons which do not need to be entered to complete the seed.
+
+    Dev note: Depending on other settings, disabling all 4 dungeons can make enough locations
+    inaccessible that we can't place all the non-filler items, which causes accessibility=full
+    to fail. You can either go down to accessibility=minimal, or rely on other worlds to
+    accommodate your excess progressive/useful items.
+    """
     display_name = "Disabled dungeons"
     range_start = 0
     range_end = 4
@@ -326,4 +332,4 @@ class MMROptions(PerGameCommonOptions):
     link_tunic_color: LinkTunicColor
     
     def dungeon_is_enabled(self, dungeon):
-        return dungeon not in self.selected_disabled_dungeons
+        return dungeon is None or dungeon not in self.selected_disabled_dungeons

@@ -989,16 +989,19 @@ location_data_table: Dict[str, MMRLocationData] = {
     "Goron Village Shop (Spring) Item 1": MMRLocationData(
         region="Goron Village",
         address=0x3469420090021,
+        can_create=lambda options: options.shopsanity.value == 2,
         dungeon_affinity="Snowhead Temple"
     ),
     "Goron Village Shop (Spring) Item 2": MMRLocationData(
         region="Goron Village",
         address=0x3469420090022,
+        can_create=lambda options: options.shopsanity.value == 2,
         dungeon_affinity="Snowhead Temple"
     ),
     "Goron Village Shop (Spring) Item 3": MMRLocationData(
         region="Goron Village",
         address=0x3469420090023,
+        can_create=lambda options: options.shopsanity.value == 2,
         dungeon_affinity="Snowhead Temple"
     ),    
     "Goron Village Scrub Purchase": MMRLocationData(
