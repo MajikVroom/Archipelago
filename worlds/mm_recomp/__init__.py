@@ -67,6 +67,7 @@ class MMRWorld(World):
 
             self.prices = self.prices[:-1]
         
+        # TODO: this should probably be on self rather than self.options TBH. Think I did it for plumbing simplicitly...
         self.options.selected_disabled_dungeons = []
         if self.options.disabled_dungeons.value != 0:
             disableable_dungeons = "Woodfall Temple", "Snowhead Temple", "Great Bay Temple", "Stone Tower Temple"
@@ -454,11 +455,7 @@ class MMRWorld(World):
             if self.options.skullsanity.value == 2 and (name == "Swamp Spider House Reward" or name == "Ocean Spider House Reward"):
                 continue
             if name in location_rules and location_data_table[name].can_create(self.options):
-                if not self.options.dungeon_is_enabled(location_data_table[name].dungeon_affinity):
-                    # Locations affine to disabled dungeons are inaccessible.
-                    location.access_rule = lambda state: False
-                else:
-                    location.access_rule = location_rules[name]
+                location.access_rule = location_rules[name]
 
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
         if self.options.shopsanity.value:
@@ -504,5 +501,7 @@ class MMRWorld(World):
             "shuffle_great_fairy_rewards": self.options.shuffle_great_fairy_rewards.value,
             "link_tunic_color": ((self.options.link_tunic_color.value[0] & 0xFF) << 16) | ((self.options.link_tunic_color.value[1] & 0xFF) << 8) | (self.options.link_tunic_color.value[2] & 0xFF),
             "random_seed": self.random.getrandbits(32),
-            "logic_difficulty": self.options.logic_difficulty.value
+            "logic_difficulty": self.options.logic_difficulty.value,
+            "disabled_dungeons": self.options.disabled_dungeons.value,
+            "selected_disabled_dungeons": self.options.selected_disabled_dungeons
         }

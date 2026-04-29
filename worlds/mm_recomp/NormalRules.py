@@ -190,7 +190,7 @@ def get_region_rules(player, options):
         "Woodfall -> Woodfall Temple":
             lambda state: (
                 options.dungeon_is_enabled("Woodfall Temple") and
-                can_play_song("Sonata of Awakening", state, player),
+                can_play_song("Sonata of Awakening", state, player)
             ),
         "Termina Field -> Path to Mountain Village":
             lambda state: state.has("Progressive Bow", player),
@@ -286,11 +286,11 @@ def get_region_rules(player, options):
             ),
         "Stone Tower -> Stone Tower Temple":
             lambda state: (
+                options.dungeon_is_enabled("Stone Tower Temple") and
                 can_reach_stonetower(state, player)
             ),
         "Stone Tower -> Stone Tower (Inverted)":
             lambda state: (
-                options.dungeon_is_enabled("Stone Tower Temple") and
                 can_reach_stonetower(state, player) and 
                 can_use_light_arrows(state, player) and 
                 can_play_song("Elegy of Emptiness", state, player)
@@ -298,7 +298,7 @@ def get_region_rules(player, options):
         "Stone Tower (Inverted) -> Stone Tower Temple (Inverted)":
             lambda state: (
                 options.dungeon_is_enabled("Stone Tower Temple")
-            ),    
+            ),
     }
 
 def get_location_rules(player, options, prices):
