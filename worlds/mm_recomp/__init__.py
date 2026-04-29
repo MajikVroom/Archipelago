@@ -89,32 +89,23 @@ class MMRWorld(World):
         mw = self.multiworld
 
         item_pool: List[MMRItem] = []
-        item_pool_count: Dict[str, int] = {}
-        for name, item in item_data_table.items():
-            item_pool_count[name] = 0
-            if item.code and item.can_create(self.options):
-                while item_pool_count[name] < item.num_exist:
-                    item_pool.append(self.create_item(name))
-                    item_pool_count[name] += 1
-
-        mw.itempool += item_pool
 
         mw.push_precollected(self.create_item("Ocarina of Time"))
         mw.push_precollected(self.create_item("Song of Time"))
         self.placed_songs += 1
 
         if self.options.swordless.value:
-            mw.itempool.append(self.create_item("Progressive Sword"))
+            item_pool.append(self.create_item("Progressive Sword"))
 
         if self.options.shieldless.value:
-            mw.itempool.append(self.create_item("Progressive Shield"))
+            item_pool.append(self.create_item("Progressive Shield"))
             
         if self.options.start_with_soaring.value:
             mw.push_precollected(self.create_item("Song of Soaring"))
             self.placed_songs += 1
         
         if self.options.shuffle_spiderhouse_reward.value:
-            mw.itempool.append(self.create_item("Progressive Wallet"))
+            item_pool.append(self.create_item("Progressive Wallet"))
 
         if self.options.shuffle_regional_maps.value == 1:
             mw.push_precollected(self.create_item("Clock Town Map"))
@@ -125,20 +116,20 @@ class MMRWorld(World):
             mw.push_precollected(self.create_item("Stone Tower Map"))
 
         if self.options.curiostity_shop_trades.value:
-            mw.itempool.append(self.create_item("Blue Rupee"))
-            mw.itempool.append(self.create_item("Red Rupee"))
-            mw.itempool.append(self.create_item("Purple Rupee"))
-            mw.itempool.append(self.create_item("Gold Rupee"))
+            item_pool.append(self.create_item("Blue Rupee"))
+            item_pool.append(self.create_item("Red Rupee"))
+            item_pool.append(self.create_item("Purple Rupee"))
+            item_pool.append(self.create_item("Gold Rupee"))
 
         shp = self.options.starting_hearts.value
         if self.options.starting_hearts_are_containers_or_pieces.value == 0:
             for i in range(0, int((12 - shp)/4)):
-                mw.itempool.append(self.create_item("Heart Container"))
+                item_pool.append(self.create_item("Heart Container"))
             for i in range(0, (12 - shp) % 4):
-                mw.itempool.append(self.create_item("Heart Piece"))
+                item_pool.append(self.create_item("Heart Piece"))
         else:
             for i in range(0, 12 - shp):
-                mw.itempool.append(self.create_item("Heart Piece"))
+                item_pool.append(self.create_item("Heart Piece"))
 
         # REVIEW: I'm lazy, and don't want to update all of the "don't place keys/fairies if the dungeon is disabled"
         # code to offset the non-placed items by adding filler to the pool. And a previous version of disabled_dungeons
@@ -153,8 +144,7 @@ class MMRWorld(World):
             unfilled_count += 1
 
         unfilled_count = self.fill_pool_to_target(item_pool, unfilled_count)
-        if unfilled_count > 0:
-            self.create_and_add_filler_items(unfilled_count)
+        mw.itempool += item_pool
 
     def create_regions(self) -> None:
         player = self.player
@@ -387,48 +377,44 @@ class MMRWorld(World):
         # ~ mw.get_location("Top of Clock Tower (Song of Time)", player).place_locked_item(self.create_item(self.get_filler_item_name()))
 
     def fill_pool_to_target(self, item_pool, target: int):
-        total_placed = 0
+        starting_count = len(item_pool)
+        total_added = 0
         total_filler = 0
-        unplaced_filler = {}
+        pending_static_filler = {}
 
-        # Start by placing all the non-filler
+        # Start by adding all the non-filler
         for name, item in item_data_table.items():
             if item.code and item.can_create(self.options):
                 if item.type == ItemClassification.filler:
-                    unplaced_filler[name] = item.num_exist
+                    pending_static_filler[name] = item.num_exist
                     total_filler += item.num_exist
                 else:
                     per_item_count = 0
                     while per_item_count < item.num_exist:
                         item_pool.append(self.create_item(name))
                         per_item_count += 1
-                        total_placed += 1
+                        total_added += 1
         
-        if total_placed > target:
+        if starting_count + total_added > target:
             raise RuntimeError("Not enough locations available for this item pool")
         
-        if total_placed + total_filler <= target:
+        if starting_count + total_added + total_filler <= target:
             # We can place all of the static filler without passing the target. No need to select.
-            for name, num_exist in unplaced_filler.items():
+            for name, num_exist in pending_static_filler.items():
                 per_item_count = 0
                 while per_item_count < num_exist:
                     item_pool.append(self.create_item(name))
                     per_item_count += 1
-                    total_placed += 1
+                    total_added += 1
         else:
             # Draw enough filler to reach the target, and discard the rest.
-            for name in self.random.sample(list(unplaced_filler.keys()), k=(target - total_placed), counts=unplaced_filler.values()):
+            for name in self.random.sample(list(pending_static_filler.keys()), k=(target - total_added), counts=pending_static_filler.values()):
                 item_pool.append(self.create_item(name))
-                total_placed += 1
+                total_added += 1
 
-        # return the remainder that needs to be added as new filler
-        return target - total_placed
-
-
-
-    def create_and_add_filler_items(self, count: int = 1):
-        for i in range(count):
-            self.multiworld.itempool.append(self.create_item(self.get_filler_item_name()))
+        # Generate dynamic filler for the rest
+        for i in range(target - (starting_count + total_added)):
+            item_pool.append(self.create_item(self.get_filler_item_name()))
 
     def get_filler_item_name(self) -> str:
         filler_items = ["Blue Rupee", "Red Rupee", "Purple Rupee", "Silver Rupee", "Gold Rupee"]
