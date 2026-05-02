@@ -132,13 +132,15 @@ class MMRWorld(World):
             for i in range(0, 12 - shp):
                 item_pool.append(self.create_item("Heart Piece"))
 
-        # REVIEW: I'm lazy, and don't want to update all of the "don't place keys/fairies if the dungeon is disabled"
-        # code to offset the non-placed items by adding filler to the pool. And a previous version of disabled_dungeons
-        # attempted to remove unreachable locations entirely, which required more complicated logic here (but that ran
-        # into problems with client code which doesn't expect an entire dungeon's worth of checks to vanish, so I
-        # had to change my approach).
-        # Anyway, I wrote this auto-balancer. If there aren't enough locations to fit the entire static item pool,
-        # it'll remove static filler. If there are unfilled locations, it'll create filler.
+        # REVIEW: Disabling dungeons and filling them with Blue Rupees effectively removes locations from the pool,
+        # which means the item pool size ends up being mismatched. So we auto-balance it.
+        # If the static item pool is too small, we generate dynamic filler. This replaces the previous set of
+        # hardcoded filler generation calls. If the static item pool is too large, we'll trim the static filler
+        # down by proportionally weighted random selection.
+        # Alternative approach: let the item pool be oversized, and let Archipelago sort it out. I don't like that
+        # because it can result in other worlds' filler not getting placed. I know MM's filler is low-value, and
+        # some other games have some higher-value filler, so I lean towards making sure MM's items/locations are always
+        # balanced.
 
         unfilled_count = 0
         for location in mw.get_unfilled_locations(self.player):
@@ -186,6 +188,7 @@ class MMRWorld(World):
                                         "Great Bay Temple" : "Great Bay Temple Gyorg's Remains", "Stone Tower Temple" : "Stone Tower Temple Inverted Twinmold's Remains"}
             remains_list = ["Odolwa's Remains", "Goht's Remains", "Gyorg's Remains", "Twinmold's Remains"]
             if self.options.shuffle_boss_remains.value == 2:
+                # REVIEW: Shuffled boss remains + disabled dungeon is a bit of a gross combo, since you can't rely on the remains to tell which dungeons are disabled.
                 self.random.shuffle(remains_list)
 
             # Place all of the remains in an enabled dungeon, or in the starting inventory.
@@ -348,6 +351,16 @@ class MMRWorld(World):
             for i in range(shp - 4, 8):
                 mw.get_location(code_to_location_table[0x34694200D0000 | i], player).item_rule = lambda item: item.name != "Heart Piece" and item.name != "Heart Container"
 
+        # All locations associated with a disabled dungeon get filled with Blue Rupees. These locations are already
+        # inaccessible, so they're not going to have critical items. But this way, we're not locking away a bunch
+        # of *more* useful junk (especially from other worlds).
+        # REVIEW: should this rule be changed for accessibility != full?
+        # TODO: Track Great Fairy accessibility centrally, and handle that as an extra step. That way we can account for fairysanity allowing access even with the dungeon disabled.
+        for location in mw.get_locations(player):
+            name = location.name
+            if location_data_table[name].can_create(self.options) and not self.options.dungeon_is_enabled(location_data_table[name].dungeon_affinity):
+                self.place(name, "Blue Rupee")
+
         if self.options.song_shuffle.value == 2:
             song_location_names = ["Top of Clock Tower (Song of Time)", "Clock Tower Happy Mask Salesman #1", "Romani Ranch Romani Game", "Southern Swamp Song Tablet", "Graveyard Day 1 Iron Knuckle Song",
                                 "Deku Palace Monkey Song", "Twin Islands Goron Elder Request", "Great Bay Baby Zora Song", "Ikana Castle King Song", "Oath to Order"]
@@ -378,8 +391,7 @@ class MMRWorld(World):
         # ~ mw.get_location("Top of Clock Tower (Song of Time)", player).place_locked_item(self.create_item(self.get_filler_item_name()))
 
     def fill_pool_to_target(self, item_pool, target: int):
-        starting_count = len(item_pool)
-        total_added = 0
+        current_count = len(item_pool)
         total_filler = 0
         pending_static_filler = {}
 
@@ -394,27 +406,27 @@ class MMRWorld(World):
                     while per_item_count < item.num_exist:
                         item_pool.append(self.create_item(name))
                         per_item_count += 1
-                        total_added += 1
+                        current_count += 1
         
-        if starting_count + total_added > target:
+        if current_count > target:
             raise RuntimeError("Not enough locations available for this item pool")
         
-        if starting_count + total_added + total_filler <= target:
+        if current_count + total_filler <= target:
             # We can place all of the static filler without passing the target. No need to select.
             for name, num_exist in pending_static_filler.items():
                 per_item_count = 0
                 while per_item_count < num_exist:
                     item_pool.append(self.create_item(name))
                     per_item_count += 1
-                    total_added += 1
+                    current_count += 1
         else:
             # Draw enough filler to reach the target, and discard the rest.
-            for name in self.random.sample(list(pending_static_filler.keys()), k=(target - total_added), counts=pending_static_filler.values()):
+            for name in self.random.sample(list(pending_static_filler.keys()), k=(target - current_count), counts=pending_static_filler.values()):
                 item_pool.append(self.create_item(name))
-                total_added += 1
+                current_count += 1
 
         # Generate dynamic filler for the rest
-        for i in range(target - (starting_count + total_added)):
+        for i in range(target - current_count):
             item_pool.append(self.create_item(self.get_filler_item_name()))
 
     def get_filler_item_name(self) -> str:
