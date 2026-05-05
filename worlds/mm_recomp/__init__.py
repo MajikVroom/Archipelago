@@ -1,6 +1,7 @@
 from typing import List
 from typing import Dict
 from typing import TextIO
+from typing import Set
 
 from BaseClasses import Region, Tutorial, ItemClassification
 from worlds.AutoWorld import WebWorld, World
@@ -10,7 +11,7 @@ from .Options import MMROptions
 from .Regions import region_data_table, get_exit
 from .Rules import *
 from .NormalRules import *
-from .Constants import default_shop_prices
+from .Constants import default_shop_prices, vanilla_song_checks
 
 class MMRWebWorld(WebWorld):
     # ~ theme = "partyTime"
@@ -73,9 +74,11 @@ class MMRWorld(World):
             disableable_dungeons = "Woodfall Temple", "Snowhead Temple", "Great Bay Temple", "Stone Tower Temple"
             self.options.selected_disabled_dungeons = self.random.sample(disableable_dungeons, self.options.disabled_dungeons.value)
 
-        self.placed_songs = 0
         if self.options.song_shuffle.value == 0:
             raise RuntimeError("TODO: vanilla songs")
+        elif self.options.song_shuffle.value == 2:
+            # Shuffling songs amongst themselves requires them to be local.
+            self.options.local_items.value |= set(vanilla_song_checks.values())
 
     def create_item(self, name: str) -> MMRItem:
         return MMRItem(name, item_data_table[name].type, item_data_table[name].code, self.player)
@@ -93,7 +96,6 @@ class MMRWorld(World):
 
         mw.push_precollected(self.create_item("Ocarina of Time"))
         mw.push_precollected(self.create_item("Song of Time"))
-        self.placed_songs += 1
 
         if self.options.swordless.value:
             item_pool.append(self.create_item("Progressive Sword"))
@@ -103,7 +105,6 @@ class MMRWorld(World):
             
         if self.options.start_with_soaring.value:
             mw.push_precollected(self.create_item("Song of Soaring"))
-            self.placed_songs += 1
         
         if self.options.shuffle_spiderhouse_reward.value:
             item_pool.append(self.create_item("Progressive Wallet"))
@@ -362,26 +363,27 @@ class MMRWorld(World):
                 self.place(name, "Blue Rupee")
 
         if self.options.song_shuffle.value == 2:
-            song_location_names = ["Top of Clock Tower (Song of Time)", "Clock Tower Happy Mask Salesman #1", "Romani Ranch Romani Game", "Southern Swamp Song Tablet", "Graveyard Day 1 Iron Knuckle Song",
-                                "Deku Palace Monkey Song", "Twin Islands Goron Elder Request", "Great Bay Baby Zora Song", "Ikana Castle King Song", "Oath to Order"]
-            song_names = ["Song of Time", "Song of Healing", "Epona's Song", "Song of Soaring", "Song of Storms", "Sonata of Awakening", "Goron Lullaby", "New Wave Bossa Nova", "Elegy of Emptiness", "Oath to Order"]
-            total_song_count = len(song_names)
-
-            # REVIEW: I'm tracking placed_songs based on the item_rule returning true. If it's possible for the song to not actually end up there, this is inaccurate.
-
             def song_only_item_rule(item):
-                if self.placed_songs >= total_song_count:
+                # Allow only songs, unless all the songs in the item pool have been placed.
+                if item.name in vanilla_song_checks.values():
                     return True
-                if item.name in song_names:
-                    self.placed_songs += 1
-                    return True
-                return False
+
+                # REVIEW: This seems horribly inefficient, but I can't think of a good alternative. We could try to track
+                # each instantiated song's item persistently, but that doesn't account for something like start_inventory_from_pool
+                # removing an instantiated item from the pool.
+                # The only idea I can come up with is caching a list of tracked song items, and discarding it if len(itempool)
+                # has changed, under the theory that any change to the itempool like start_inventory_from_pool would
+                # _probably_ also change its size. That feels somewhat fragile though.
+                for item in self.multiworld.itempool:
+                    if not item.location and item.player == self.player and item.name in vanilla_song_checks.values():
+                        return False
+                return True
             
             def no_songs_item_rule(item):
-                return item.name not in song_names
+                return item.name not in vanilla_song_checks.values()
 
             for location in mw.get_unfilled_locations(self.player):
-                if location.name in song_location_names:
+                if location.name in vanilla_song_checks.keys():
                     location.item_rule = song_only_item_rule
                 else:
                     location.item_rule = no_songs_item_rule

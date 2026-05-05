@@ -128,3 +128,17 @@ shop_location_to_id = {
 	"Zora Hall Shop Item 2": SHOP_ID_ZORA_SHOP_2,
 	"Zora Hall Shop Item 3": SHOP_ID_ZORA_SHOP_3,
 }
+
+vanilla_song_checks = {
+    "Top of Clock Tower (Song of Time)": "Song of Time",
+    "Clock Tower Happy Mask Salesman #1": "Song of Healing",
+    "Romani Ranch Romani Game": "Epona's Song",
+    "Southern Swamp Song Tablet": "Song of Soaring",
+    "Graveyard Day 1 Iron Knuckle Song": "Song of Storms",
+    "Deku Palace Monkey Song": "Sonata of Awakening",
+    # Baby Goron doesn't count as a song location until somebody splits Lullaby into a 2-part progressive item.
+    "Twin Islands Goron Elder Request": "Goron Lullaby",
+    "Great Bay Baby Zora Song": "New Wave Bossa Nova",
+    "Ikana Castle King Song": "Elegy of Emptiness",
+    "Oath to Order": "Oath to Order",
+}
